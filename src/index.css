@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-white text-text-primary antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  .bento-card {
+    @apply bg-white border border-gray-100 rounded-bento p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/20;
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-white font-semibold py-3 px-6 rounded-full transition-all hover:scale-105 active:scale-95 disabled:opacity-50;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-50 text-text-primary font-semibold py-3 px-6 rounded-full border border-gray-200 transition-all hover:bg-gray-100;
+  }
+}
