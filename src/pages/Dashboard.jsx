@@ -588,8 +588,6 @@ const Dashboard = () => {
                     <LogOut className="w-5 h-5" /> Sign Out
                   </button>
                 </div>
-                  </div>
-                </div>
               </div>
             } />
 
