@@ -30,6 +30,7 @@ import ProfitCalculator from '../components/tools/ProfitCalculator';
 import PropFirmCalculator from '../components/tools/PropFirmCalculator';
 import CurrencyStrengthMeter from '../components/tools/CurrencyStrengthMeter';
 import CorrelationMatrix from '../components/tools/CorrelationMatrix';
+import EdgeScanner from '../components/tools/EdgeScanner';
 
 const NAV_ITEMS = [
   { name: 'Tools Hub',        icon: LayoutDashboard, mobileLabel: 'Tools'   },
@@ -48,6 +49,11 @@ const Dashboard = () => {
   const { toolId } = useParams();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [search, setSearch] = useState('');
+  
+  // Top Up & Billing State
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [topUpAmount, setTopUpAmount] = useState(500);
+  const [isAutoRenew, setIsAutoRenew] = useState(false);
 
   // Live Clock
   useEffect(() => {
@@ -103,6 +109,10 @@ const Dashboard = () => {
   const handleUseTool = (tool) => {
     if (tool.tier !== 'Basic' && tier === 'Basic') {
       alert('This tool requires a Premium or Pro subscription.');
+      return;
+    }
+    if (credits < tool.cost) {
+      setShowTopUpModal(true);
       return;
     }
     navigate(`/dashboard/tool/${tool.id}`);
@@ -165,15 +175,22 @@ const Dashboard = () => {
         {/* Sidebar Footer */}
         <div className="space-y-2 pt-4 border-t border-gray-100">
           {/* Credit balance */}
-          <div className="bg-accent-blue/50 rounded-2xl p-4 border border-primary/10">
-            <div className="flex items-center gap-2 mb-1">
-              <Coins className="w-4 h-4 text-primary" />
-              <span className="text-xs font-bold text-primary uppercase">Balance</span>
+          <div className="bg-accent-blue/50 rounded-2xl p-4 border border-primary/10 relative overflow-hidden group">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <Coins className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold text-primary uppercase">Balance</span>
+              </div>
+              <button onClick={() => setShowTopUpModal(true)} className="text-[10px] bg-primary text-white px-2 py-0.5 rounded font-bold uppercase hover:bg-primary/90 transition-colors">
+                Top Up
+              </button>
             </div>
             <div className="text-2xl font-bold text-text-primary">
               {credits} <span className="text-sm font-medium text-text-secondary">Credits</span>
             </div>
-            <div className="text-[10px] font-bold text-primary uppercase tracking-widest">{tier} Plan</div>
+            <div className="flex items-center justify-between mt-1">
+              <div className="text-[10px] font-bold text-primary uppercase tracking-widest">{tier} Plan</div>
+            </div>
           </div>
 
           {/* User */}
@@ -459,6 +476,20 @@ const Dashboard = () => {
                         <Link to="/pricing" className="text-primary font-bold text-sm">Upgrade →</Link>
                       )}
                     </div>
+                    
+                    {/* Subscription Auto-Renew */}
+                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                      <div>
+                        <div className="font-bold text-sm text-text-primary">Subscription Auto-Renew</div>
+                        <div className="text-xs text-text-secondary">Automatically bill when plan ends after 1 month</div>
+                      </div>
+                      <div 
+                        onClick={() => setIsAutoRenew(!isAutoRenew)}
+                        className={cn("w-11 h-6 rounded-full cursor-pointer relative transition-colors", isAutoRenew ? "bg-primary" : "bg-gray-300")}
+                      >
+                        <div className={cn("absolute top-1 w-4 h-4 bg-white rounded-full transition-all", isAutoRenew ? "right-1" : "left-1")}></div>
+                      </div>
+                    </div>
                     <div className="flex items-center justify-between py-3 border-b border-gray-100">
                       <div>
                         <div className="font-bold text-sm text-text-primary">Credit Balance</div>
@@ -543,16 +574,7 @@ const Dashboard = () => {
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-50 rounded-full text-purple-600 font-bold text-xs uppercase tracking-widest">System Training in Progress</div>
               </div>
             } />
-            <Route path="/tool/edge" element={
-              <div className="bento-card p-12 text-center bg-white">
-                <BarChart2 className="w-20 h-20 text-red-500 mx-auto mb-6" />
-                <h2 className="text-2xl font-bold text-text-primary mb-4">Edge Scanner Pro</h2>
-                <p className="text-text-secondary max-w-md mx-auto mb-8">The scanner requires a high-bandwidth connection to the currency correlation matrix. Initializing neural nodes...</p>
-                <div className="flex justify-center gap-1">
-                  {[1,2,3,4,5].map(i => <div key={i} className="w-2 h-2 bg-red-500/40 rounded-full animate-bounce" style={{ animationDelay: `${i*0.1}s` }} />)}
-                </div>
-              </div>
-            } />
+            <Route path="/tool/edge" element={<EdgeScanner />} />
           </Routes>
         </div>
       </main>
@@ -588,6 +610,77 @@ const Dashboard = () => {
           })}
         </div>
       </nav>
+
+      {/* ── Top Up Modal ─────────────────────────────────── */}
+      {showTopUpModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl border border-white/20 animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold text-text-primary mb-2">Insufficient Credits / Top Up</h3>
+            <p className="text-sm text-text-secondary mb-6">
+              You need more credits to use this tool. Choose an amount below to instantly top up your account. Available for both Free and Premium users.
+            </p>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                {[500, 1000, 5000].map(amount => (
+                  <button
+                    key={amount}
+                    onClick={() => setTopUpAmount(amount)}
+                    className={cn(
+                      "py-3 rounded-xl border text-sm font-bold transition-all",
+                      topUpAmount === amount 
+                        ? "bg-primary border-primary text-white shadow-md shadow-primary/20" 
+                        : "bg-white border-gray-200 text-text-primary hover:border-primary/50"
+                    )}
+                  >
+                    {amount}
+                  </button>
+                ))}
+              </div>
+              
+              <div>
+                <label className="block text-[10px] font-bold text-text-secondary uppercase mb-1.5">Custom Amount</label>
+                <input 
+                  type="number" 
+                  min="50"
+                  step="50"
+                  value={topUpAmount}
+                  onChange={(e) => setTopUpAmount(Number(e.target.value))}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm font-mono"
+                />
+              </div>
+
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-bold text-blue-900">Total Price</div>
+                  <div className="text-xs text-blue-700">1 Credit = $0.02</div>
+                </div>
+                <div className="text-xl font-black text-blue-900">${(topUpAmount * 0.02).toFixed(2)}</div>
+              </div>
+
+              <div className="flex items-center justify-between mt-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={isAutoRenew} onChange={() => setIsAutoRenew(!isAutoRenew)} className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary" />
+                  <span className="text-xs font-bold text-text-secondary">Enable Auto-TopUp when empty</span>
+                </label>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button onClick={() => setShowTopUpModal(false)} className="flex-1 px-6 py-3 bg-gray-100 text-text-primary rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors">
+                  Cancel
+                </button>
+                <a 
+                  href={`mailto:isaacbrainer4@gmail.com?subject=Credit Top Up Request: ${topUpAmount} Credits&body=Hello,%0D%0A%0D%0AI would like to purchase ${topUpAmount} credits for $${(topUpAmount * 0.02).toFixed(2)}. Please send me the payment instructions.%0D%0A%0D%0AAuto-renew: ${isAutoRenew ? 'Yes' : 'No'}`}
+                  onClick={() => setShowTopUpModal(false)}
+                  className="flex-1 px-6 py-3 bg-primary text-white text-center rounded-xl font-bold text-sm hover:opacity-90 transition-opacity block"
+                >
+                  Pay via Email
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

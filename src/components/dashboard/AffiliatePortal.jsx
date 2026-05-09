@@ -60,7 +60,15 @@ const AffiliatePortal = () => {
 
   const handleWithdrawRequest = (e) => {
     e.preventDefault();
-    alert(`Withdrawal request submitted for $${pendingPayout.toFixed(2)} via ${withdrawForm.method}. Our finance team will review and process this shortly.`);
+    
+    const totalEarnings = referrals.reduce((sum, r) => sum + (r.commission_amount || 0), 0);
+    const paidEarnings = referrals.filter(r => r.status === 'Paid').reduce((sum, r) => sum + (r.commission_amount || 0), 0);
+    const pendingPayout = totalEarnings - paidEarnings;
+
+    const subject = encodeURIComponent(`Affiliate Withdrawal Request - $${pendingPayout.toFixed(2)}`);
+    const body = encodeURIComponent(`Hello,\n\nI would like to request my affiliate payout.\n\nAmount: $${pendingPayout.toFixed(2)}\nPayout Method: ${withdrawForm.method}\nDetails:\n${withdrawForm.details}\n\nPlease review and process.\n\nThank you.`);
+    
+    window.location.href = `mailto:isaacbrainer4@gmail.com?subject=${subject}&body=${body}`;
     setIsWithdrawModalOpen(false);
   };
 
