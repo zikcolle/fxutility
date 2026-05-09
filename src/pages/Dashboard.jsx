@@ -156,28 +156,28 @@ const Dashboard = () => {
 
   const tools = [
     { name: 'Lot Size Calculator',     id: 'lotsize',   cost: 2,  icon: ShieldCheck,  tier: 'Basic',   color: 'text-blue-500',   bg: 'bg-blue-50',
-      desc: 'Calculate your exact lot size to protect 1–2% of your account per trade. Works across all currency pairs.' },
+      desc: 'Calculate your exact lot size to protect 1–2% of your account per trade. Works across all currency pairs.', isAI: false },
     { name: 'Pip Value Intelligence',  id: 'pipvalue',  cost: 2,  icon: TrendingUp,   tier: 'Basic',   color: 'text-green-500',  bg: 'bg-green-50',
-      desc: 'Know the exact dollar value of each pip movement before you place a trade — critical for accurate P&L forecasting.' },
+      desc: 'Know the exact dollar value of each pip movement before you place a trade — critical for accurate P&L forecasting.', isAI: false },
     { name: 'Margin Requirement',      id: 'margin',    cost: 2,  icon: Coins,        tier: 'Basic',   color: 'text-orange-500', bg: 'bg-orange-50',
-      desc: 'Calculate precisely how much margin your broker requires for any position size, leverage, and currency pair.' },
+      desc: 'Calculate precisely how much margin your broker requires for any position size, leverage, and currency pair.', isAI: false },
     { name: 'Profit/Loss Architect',   id: 'profit',    cost: 2,  icon: DollarSign,   tier: 'Basic',   color: 'text-indigo-500', bg: 'bg-indigo-50',
-      desc: 'Project your exact P&L in account currency before entering a trade. No more mental math under pressure.' },
+      desc: 'Project your exact P&L in account currency before entering a trade. No more mental math under pressure.', isAI: false },
     { name: 'Currency Strength Meter', id: 'strength',  cost: 0,  icon: TrendingUp,   tier: 'Basic',   color: 'text-emerald-500',bg: 'bg-emerald-50',
-      desc: 'Rank all 8 major currencies from strongest to weakest in real-time. The most-shared tool in forex communities.' },
+      desc: 'Rank all 8 major currencies from strongest to weakest in real-time. The most-shared tool in forex communities.', isAI: false },
     { name: 'Session Overlap',         id: 'sessions',  cost: 0,  icon: Zap,          tier: 'Basic',   color: 'text-cyan-500',   bg: 'bg-cyan-50',
-      desc: 'Live market session clock showing London, NY, Tokyo & Sydney sessions. Spot high-liquidity overlap windows instantly.' },
+      desc: 'Live market session clock showing London, NY, Tokyo & Sydney sessions. Spot high-liquidity overlap windows instantly.', isAI: false },
     { name: 'Prop Firm Guard',         id: 'propfirm',  cost: 5,  icon: ShieldCheck,  tier: 'Premium', color: 'text-amber-500',  bg: 'bg-amber-50',
       desc: 'Track your daily and trailing drawdown against prop firm rules in real-time. Never blow a funded account by mistake.',
-      lockedFeatures: ['Real-time drawdown tracker', 'Trailing equity alerts', 'Max loss guardian'] },
+      lockedFeatures: ['Real-time drawdown tracker', 'Trailing equity alerts', 'Max loss guardian'], isAI: false },
     { name: 'Correlation Matrix',      id: 'correlation',cost: 3, icon: Grid3X3,      tier: 'Basic',   color: 'text-violet-500', bg: 'bg-violet-50',
-      desc: 'See which currency pairs move together and which cancel each other out — avoid redundant exposure across trades.' },
+      desc: 'See which currency pairs move together and which cancel each other out — avoid redundant exposure across trades.', isAI: false },
     { name: 'AI Signal Engine',        id: 'signals',   cost: 10, icon: Brain,        tier: 'Premium', color: 'text-purple-500', bg: 'bg-purple-50',
       desc: 'Neural network-powered trade setup detection trained on institutional order flow and liquidity data.',
-      lockedFeatures: ['HFT pattern recognition', 'Bias direction scoring', 'Entry zone alerts'] },
+      lockedFeatures: ['HFT pattern recognition', 'Bias direction scoring', 'Entry zone alerts'], isAI: true },
     { name: 'Edge Scanner Pro',        id: 'edge',      cost: 15, icon: BarChart2,    tier: 'Pro',     color: 'text-red-500',    bg: 'bg-red-50',
       desc: 'Currency correlation and divergence scanner that identifies high-probability edge setups across 28 pairs.',
-      lockedFeatures: ['28-pair divergence scan', 'Correlation matrix heatmap', 'Confluence score ranking'] },
+      lockedFeatures: ['28-pair divergence scan', 'Correlation matrix heatmap', 'Confluence score ranking'], isAI: true },
   ];
 
   const filteredTools = tools.filter(t =>
@@ -186,14 +186,28 @@ const Dashboard = () => {
   );
 
   const handleUseTool = (tool) => {
+    // Check tier access first
     if (tool.tier !== 'Basic' && tier === 'Basic') {
       alert('This tool requires a Premium or Pro subscription.');
       return;
     }
-    if (credits < tool.cost) {
+
+    // Determine if user needs to pay credits
+    const needsCredits = () => {
+      // Basic users pay for all tools except free ones (cost = 0)
+      if (tier === 'Basic') {
+        return tool.cost > 0;
+      }
+
+      // Premium/Pro users only pay for AI tools
+      return tool.isAI && tool.cost > 0;
+    };
+
+    if (needsCredits() && credits < tool.cost) {
       setShowTopUpModal(true);
       return;
     }
+
     navigate(`/dashboard/tool/${tool.id}`);
     setSearch('');
   };
@@ -467,7 +481,19 @@ const Dashboard = () => {
 
                       <div className="mt-auto flex items-center justify-between">
                         <div className="text-[10px] font-bold text-text-secondary uppercase">
-                          {tool.cost === 0 ? 'Free' : `${tool.cost} Credits`}
+                          {(() => {
+                            // Free tools (cost = 0)
+                            if (tool.cost === 0) return 'Free';
+
+                            // Basic users see all costs
+                            if (tier === 'Basic') return `${tool.cost} Credits`;
+
+                            // Premium/Pro users: AI tools show cost, others are free
+                            if (tool.isAI) return `${tool.cost} Credits`;
+
+                            // Non-AI tools for Premium/Pro users
+                            return 'Included';
+                          })()}
                         </div>
                         <button
                           onClick={() => handleUseTool(tool)}
