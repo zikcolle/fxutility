@@ -259,7 +259,7 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
 
       <div className={cn(
         "min-h-screen transition-colors duration-300 pt-20",
-        isDark ? "bg-[#0a0a0b] text-white" : "bg-[#f0f2f5] text-[#0f172a]"
+        isDark ? "bg-background-dark text-text-primary-dark" : "bg-background text-text-primary"
       )}>
 
         {/* Header */}
@@ -273,18 +273,18 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="px-3 py-1 bg-[#1a1a1c] text-[#888888] text-xs rounded-full border border-[#1e1e22]">
+              <div className="px-3 py-1 bg-muted text-text-secondary text-xs rounded-full border border-border">
                 INSTITUTIONAL HUB V1.2
               </div>
-              <div className="flex items-center gap-2 px-3 py-1 bg-[#1a1a1c] text-[#888888] text-xs rounded-full border border-[#1e1e22]">
+              <div className="flex items-center gap-2 px-3 py-1 bg-muted text-text-secondary text-xs rounded-full border border-border">
                 <MapPin className="w-3 h-3" />
                 {curLoading ? '...' : `${cur.country || 'Nigeria'} · ${cur.code}`}
               </div>
               <button
                 onClick={toggleTheme}
-                className="w-8 h-8 rounded-lg border border-[#1e1e22] bg-[#1a1a1c] flex items-center justify-center hover:bg-[#1e1e22] transition-colors"
+                className="w-8 h-8 rounded-lg border border-border bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
               >
-                {isDark ? <Sun className="w-4 h-4 text-[#888888]" /> : <Moon className="w-4 h-4 text-[#64748b]" />}
+                {isDark ? <Sun className="w-4 h-4 text-text-secondary" /> : <Moon className="w-4 h-4 text-text-secondary" />}
               </button>
             </div>
           </div>
@@ -293,14 +293,14 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
           <div className="flex items-center justify-center gap-4 mb-12">
             <span className={cn(
               "text-sm font-semibold transition-colors",
-              !yearly ? (isDark ? "text-white" : "text-[#0f172a]") : (isDark ? "text-[#888888]" : "text-[#64748b]")
+              !yearly ? "text-text-primary" : "text-text-secondary"
             )}>Monthly</span>
             <div className="relative">
               <button
                 onClick={() => setYearly(!yearly)}
                 className={cn(
                   "w-14 h-7 rounded-full border transition-colors",
-                  isDark ? "bg-[#1a1a1c] border-[#1e1e22]" : "bg-white border-[#e2e8f0]"
+                  "bg-muted border-border"
                 )}
               >
                 <motion.div
@@ -313,7 +313,7 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
             <div className="flex items-center gap-2">
               <span className={cn(
                 "text-sm font-semibold transition-colors",
-                yearly ? (isDark ? "text-white" : "text-[#0f172a]") : (isDark ? "text-[#888888]" : "text-[#64748b]")
+                yearly ? "text-text-primary" : "text-text-secondary"
               )}>Yearly</span>
               <span className="text-[10px] font-bold bg-[#22c55e] text-white px-2 py-0.5 rounded-full uppercase tracking-widest">
                 Save 20%
@@ -336,8 +336,8 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
                   transition={{ delay: idx * 0.1 }}
                   className={cn(
                     "relative p-6 rounded-xl border transition-all",
-                    isDark ? "bg-[#111113] border-[#1c1c20]" : "bg-white border-[#e2e8f0]",
-                    plan.popular && "border-[#2563eb] border-2"
+                    "bg-card border-border",
+                    plan.popular && "border-primary border-2"
                   )}
                 >
                   {plan.popular && (

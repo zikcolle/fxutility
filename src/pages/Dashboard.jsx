@@ -752,62 +752,98 @@ const Dashboard = () => {
             } />
 
             {/* Individual Tools */}
-            <Route path="/tool/lotsize" element={<LotSizeCalculator />} />
-            <Route path="/tool/pipvalue" element={<PipValueCalculator />} />
-            <Route path="/tool/margin" element={<MarginCalculator />} />
-            <Route path="/tool/profit" element={<ProfitCalculator />} />
-            <Route path="/tool/propfirm" element={<PropFirmCalculator />} />
-            <Route path="/tool/strength" element={<CurrencyStrengthMeter />} />
-            <Route path="/tool/correlation" element={<CorrelationMatrix />} />
+            <Route path="/tool/lotsize" element={
+              <div className="max-w-4xl mx-auto">
+                <LotSizeCalculator />
+              </div>
+            } />
+            <Route path="/tool/pipvalue" element={
+              <div className="max-w-4xl mx-auto">
+                <PipValueCalculator />
+              </div>
+            } />
+            <Route path="/tool/margin" element={
+              <div className="max-w-4xl mx-auto">
+                <MarginCalculator />
+              </div>
+            } />
+            <Route path="/tool/profit" element={
+              <div className="max-w-4xl mx-auto">
+                <ProfitCalculator />
+              </div>
+            } />
+            <Route path="/tool/propfirm" element={
+              <div className="max-w-4xl mx-auto">
+                <PropFirmCalculator />
+              </div>
+            } />
+            <Route path="/tool/strength" element={
+              <div className="max-w-4xl mx-auto">
+                <CurrencyStrengthMeter />
+              </div>
+            } />
+            <Route path="/tool/correlation" element={
+              <div className="max-w-4xl mx-auto">
+                <CorrelationMatrix />
+              </div>
+            } />
             <Route path="/tool/sessions" element={
-              <div className="bento-card p-8 bg-white relative overflow-hidden">
-                <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1 bg-primary/5 rounded-lg border border-primary/10">
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Live Sync</span>
-                </div>
-                <div className="text-center mb-10">
-                  <div className="text-5xl md:text-6xl font-black text-text-primary mb-1 tabular-nums">
-                    {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              <div className="max-w-4xl mx-auto">
+                <div className="bento-card p-8 bg-white relative overflow-hidden">
+                  <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1 bg-primary/5 rounded-lg border border-primary/10">
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                    <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Live Sync</span>
                   </div>
-                  <div className="text-xs font-bold text-text-secondary uppercase tracking-[0.3em]">
-                    {Intl.DateTimeFormat().resolvedOptions().timeZone} (Local Time)
+                  <div className="text-center mb-10">
+                    <div className="text-5xl md:text-6xl font-black text-text-primary mb-1 tabular-nums">
+                      {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </div>
+                    <div className="text-xs font-bold text-text-secondary uppercase tracking-[0.3em]">
+                      {Intl.DateTimeFormat().resolvedOptions().timeZone} (Local Time)
+                    </div>
                   </div>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
-                  {[
-                    { name: 'Sydney',  open: 22, close: 7,  color: 'text-pink-600',   bg: 'bg-pink-50',   wrapsMidnight: true },
-                    { name: 'Tokyo',   open: 0,  close: 9,  color: 'text-purple-600', bg: 'bg-purple-50', wrapsMidnight: false },
-                    { name: 'London',  open: 8,  close: 16, color: 'text-blue-600',   bg: 'bg-blue-50',   wrapsMidnight: false },
-                    { name: 'New York',open: 13, close: 22, color: 'text-orange-600', bg: 'bg-orange-50', wrapsMidnight: false },
-                  ].map(session => {
-                    const utcDay = currentTime.getUTCDay();
-                    const utcHour = currentTime.getUTCHours();
-                    const isWeekend = (utcDay === 5 && utcHour >= 22) || (utcDay === 6) || (utcDay === 0 && utcHour < 22);
-                    const sessionOpen = session.wrapsMidnight ? utcHour >= session.open || utcHour < session.close : utcHour >= session.open && utcHour < session.close;
-                    const isOpen = !isWeekend && sessionOpen;
-                    return (
-                      <div key={session.name} className={cn('p-4 rounded-2xl border border-gray-100 flex flex-col items-center gap-2', session.bg)}>
-                        <div className={cn('px-3 py-0.5 rounded-full text-[10px] font-black uppercase text-center', isWeekend ? 'bg-red-100 text-red-600' : isOpen ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500')}>
-                          {isWeekend ? 'Weekend Closed' : isOpen ? '🟢 Open' : 'Closed'}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+                    {[
+                      { name: 'Sydney',  open: 22, close: 7,  color: 'text-pink-600',   bg: 'bg-pink-50',   wrapsMidnight: true },
+                      { name: 'Tokyo',   open: 0,  close: 9,  color: 'text-purple-600', bg: 'bg-purple-50', wrapsMidnight: false },
+                      { name: 'London',  open: 8,  close: 16, color: 'text-blue-600',   bg: 'bg-blue-50',   wrapsMidnight: false },
+                      { name: 'New York',open: 13, close: 22, color: 'text-orange-600', bg: 'bg-orange-50', wrapsMidnight: false },
+                    ].map(session => {
+                      const utcDay = currentTime.getUTCDay();
+                      const utcHour = currentTime.getUTCHours();
+                      const isWeekend = (utcDay === 5 && utcHour >= 22) || (utcDay === 6) || (utcDay === 0 && utcHour < 22);
+                      const sessionOpen = session.wrapsMidnight ? utcHour >= session.open || utcHour < session.close : utcHour >= session.open && utcHour < session.close;
+                      const isOpen = !isWeekend && sessionOpen;
+                      return (
+                        <div key={session.name} className={cn('p-4 rounded-2xl border border-gray-100 flex flex-col items-center gap-2', session.bg)}>
+                          <div className={cn('px-3 py-0.5 rounded-full text-[10px] font-black uppercase text-center', isWeekend ? 'bg-red-100 text-red-600' : isOpen ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500')}>
+                            {isWeekend ? 'Weekend Closed' : isOpen ? '🟢 Open' : 'Closed'}
+                          </div>
+                          <h4 className={cn('font-bold text-sm', session.color)}>{session.name}</h4>
+                          <p className="text-[10px] text-text-secondary text-center">{session.open}:00 – {session.close}:00 UTC</p>
                         </div>
-                        <h4 className={cn('font-bold text-sm', session.color)}>{session.name}</h4>
-                        <p className="text-[10px] text-text-secondary text-center">{session.open}:00 – {session.close}:00 UTC</p>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+                  <p className="text-center text-xs text-text-secondary mt-8 pt-6 border-t border-gray-100">Peak institutional liquidity: <strong>London/NY Overlap</strong> (13:00 – 16:00 UTC)</p>
                 </div>
-                <p className="text-center text-xs text-text-secondary mt-8 pt-6 border-t border-gray-100">Peak institutional liquidity: <strong>London/NY Overlap</strong> (13:00 – 16:00 UTC)</p>
               </div>
             } />
             <Route path="/tool/signals" element={
-              <div className="bento-card p-12 text-center bg-white">
-                <Brain className="w-20 h-20 text-purple-500 mx-auto mb-6 animate-pulse" />
-                <h2 className="text-2xl font-bold text-text-primary mb-4">Neural Signal Engine</h2>
-                <p className="text-text-secondary max-w-md mx-auto mb-8">The institutional AI model is training on the latest HFT liquidity data. Live signals will be available shortly.</p>
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-50 rounded-full text-purple-600 font-bold text-xs uppercase tracking-widest">System Training in Progress</div>
+              <div className="max-w-4xl mx-auto">
+                <div className="bento-card p-12 text-center bg-white">
+                  <Brain className="w-20 h-20 text-purple-500 mx-auto mb-6 animate-pulse" />
+                  <h2 className="text-2xl font-bold text-text-primary mb-4">Neural Signal Engine</h2>
+                  <p className="text-text-secondary max-w-md mx-auto mb-8">The institutional AI model is training on the latest HFT liquidity data. Live signals will be available shortly.</p>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-50 rounded-full text-purple-600 font-bold text-xs uppercase tracking-widest">System Training in Progress</div>
+                </div>
               </div>
             } />
-            <Route path="/tool/edge" element={<EdgeScanner />} />
+            <Route path="/tool/edge" element={
+              <div className="max-w-4xl mx-auto">
+                <EdgeScanner />
+              </div>
+            } />
           </Routes>
         </div>
       </main>

@@ -8,7 +8,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#ffffff',
+        background: {
+          DEFAULT: '#ffffff',
+          dark: '#0a0a0b'
+        },
         primary: '#007aff',
         accent: {
           lavender: '#E9E7FD',
@@ -16,8 +19,26 @@ export default {
           blue: '#E0F2FE',
         },
         text: {
-          primary: '#1d1d1f',
-          secondary: '#86868b',
+          primary: {
+            DEFAULT: '#1d1d1f',
+            dark: '#ffffff'
+          },
+          secondary: {
+            DEFAULT: '#86868b',
+            dark: '#888888'
+          }
+        },
+        card: {
+          DEFAULT: '#ffffff',
+          dark: '#111113'
+        },
+        border: {
+          DEFAULT: '#e2e8f0',
+          dark: '#1c1c20'
+        },
+        muted: {
+          DEFAULT: '#f0f2f5',
+          dark: '#1a1a1c'
         }
       },
       borderRadius: {
