@@ -21,6 +21,14 @@ export const CreditProvider = ({ children }) => {
 
   const fetchProfile = async () => {
     try {
+      // Admin Override
+      const adminEmails = ['isaacbrainer4@gmail.com'];
+      if (user && adminEmails.includes(user.email)) {
+        setCredits(999999);
+        setTier('Pro');
+        return; // Skip fetching from DB if admin
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .select('credits, tier')
