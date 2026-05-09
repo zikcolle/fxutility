@@ -527,7 +527,9 @@ const Dashboard = () => {
                         onClick={() => {
                           setIsAutoRenew(!isAutoRenew);
                           if (!isAutoRenew) {
-                            window.location.href = `mailto:isaacbrainer4@gmail.com?subject=Enable Auto-Renew for ${user?.email || displayName}&body=Hello, please enable auto-renew for my subscription and send the invoice to my registered email address.`;
+                            const subject = encodeURIComponent(`Enable Auto-Renew for ${user?.email || displayName}`);
+                            const body = encodeURIComponent('Hello, please enable auto-renew for my subscription and send the invoice to my registered email address.');
+                            window.location.href = `mailto:isaacbrainer4@gmail.com?subject=${subject}&body=${body}`;
                           }
                         }}
                         className={cn("w-11 h-6 rounded-full cursor-pointer relative transition-colors", isAutoRenew ? "bg-primary" : "bg-gray-300")}
