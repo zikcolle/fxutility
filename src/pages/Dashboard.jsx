@@ -152,13 +152,15 @@ const Dashboard = () => {
           ))}
         </div>
 
-        {/* AdSense Sidebar Slot */}
-        <div className="my-6">
-          <div className="w-full aspect-[4/3] bg-gray-50 border border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center p-4 text-center">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Advertisement</span>
-            <div className="text-[10px] text-gray-300 italic">AdSense Slot #1</div>
+        {/* AdSense Sidebar Slot - Only for Basic Users */}
+        {tier === 'Basic' && (
+          <div className="my-6">
+            <div className="w-full aspect-[4/3] bg-gray-50 border border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center p-4 text-center">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Advertisement</span>
+              <div className="text-[10px] text-gray-300 italic">AdSense Slot #1</div>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Sidebar Footer */}
         <div className="space-y-2 pt-4 border-t border-gray-100">
@@ -239,12 +241,14 @@ const Dashboard = () => {
             )}
           </header>
 
-          {/* ── AdSense Content Slot 1 ── */}
-          <div className="mb-8 hidden sm:block">
-            <div className="w-full h-24 bg-gray-50 border border-dashed border-gray-200 rounded-2xl flex items-center justify-center text-center">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sponsored Feed Content</span>
+          {/* ── AdSense Content Slot 1 ── Only for Basic Users */}
+          {tier === 'Basic' && (
+            <div className="mb-8 hidden sm:block">
+              <div className="w-full h-24 bg-gray-50 border border-dashed border-gray-200 rounded-2xl flex items-center justify-center text-center">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sponsored Feed Content</span>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* ── Dynamic Route Content ── */}
           <Routes>
@@ -354,12 +358,19 @@ const Dashboard = () => {
                   <h2 className="text-xl font-bold text-text-primary mb-2">Neural Price Alerts</h2>
                   <p className="text-text-secondary mb-8 max-w-sm mx-auto text-sm">Real-time volatility and price action triggers delivered to your desktop and mobile device via push notifications.</p>
                   
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="px-4 py-2 bg-amber-50 rounded-full text-amber-700 font-bold text-[10px] uppercase tracking-widest border border-amber-100">
-                      PRO ACCESS REQUIRED
+                  {tier !== 'Pro' ? (
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="px-4 py-2 bg-amber-50 rounded-full text-amber-700 font-bold text-[10px] uppercase tracking-widest border border-amber-100">
+                        PRO ACCESS REQUIRED
+                      </div>
+                      <Link to="/pricing" className="btn-primary py-3 px-8 text-sm">Upgrade to Pro</Link>
                     </div>
-                    <Link to="/pricing" className="btn-primary py-3 px-8 text-sm">Upgrade to Pro</Link>
-                  </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-4">
+                       <p className="text-sm font-bold text-primary">Pro Active. Alert dashboard loading...</p>
+                       {/* Pro content for alerts will go here */}
+                    </div>
+                  )}
                 </div>
               </div>
             } />
@@ -372,40 +383,44 @@ const Dashboard = () => {
               <div className="space-y-8 animate-in fade-in duration-700">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold text-text-primary">Institutional Syllabus</h2>
-                  <div className="px-4 py-1.5 bg-primary/5 rounded-full text-primary font-black text-[10px] uppercase tracking-widest border border-primary/10">
-                    Pro Access Only
-                  </div>
+                  {tier !== 'Pro' && (
+                    <div className="px-4 py-1.5 bg-primary/5 rounded-full text-primary font-black text-[10px] uppercase tracking-widest border border-primary/10">
+                      Pro Access Only
+                    </div>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
-                  <div className="absolute inset-0 z-10 backdrop-blur-[4px] bg-white/20 flex items-center justify-center rounded-3xl">
-                    <div className="bg-white p-8 rounded-3xl shadow-2xl border border-gray-100 max-w-sm text-center">
-                      <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <BookOpen className="w-6 h-6 text-primary" />
+                  {tier !== 'Pro' && (
+                    <div className="absolute inset-0 z-10 backdrop-blur-[4px] bg-white/20 flex items-center justify-center rounded-3xl">
+                      <div className="bg-white p-8 rounded-3xl shadow-2xl border border-gray-100 max-w-sm text-center">
+                        <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                          <BookOpen className="w-6 h-6 text-primary" />
+                        </div>
+                        <h4 className="text-lg font-bold text-text-primary mb-2">Master Institutional Order Flow</h4>
+                        <p className="text-xs text-text-secondary mb-6 leading-relaxed">
+                          Access our full database of professional trading courses and private webinars. Reserved for FXUTILITY Pro members.
+                        </p>
+                        <Link to="/pricing" className="btn-primary py-3 px-6 text-sm block">Upgrade to Unlock</Link>
                       </div>
-                      <h4 className="text-lg font-bold text-text-primary mb-2">Master Institutional Order Flow</h4>
-                      <p className="text-xs text-text-secondary mb-6 leading-relaxed">
-                        Access our full database of professional trading courses and private webinars. Reserved for FXUTILITY Pro members.
-                      </p>
-                      <Link to="/pricing" className="btn-primary py-3 px-6 text-sm block">Upgrade to Unlock</Link>
                     </div>
-                  </div>
+                  )}
                   
                   {[
-                    { title: 'Liquidity Concepts 101', desc: 'Understanding bank order blocks and fair value gaps.', time: '15 min', level: 'Institutional' },
-                    { title: 'Risk Management Architecture', desc: 'The math behind professional position sizing.', time: '10 min', level: 'Expert' },
-                    { title: 'Currency Correlation Matrix', desc: 'How to trade pair divergence like a macro fund.', time: '20 min', level: 'Advanced' },
-                    { title: 'Psychology of Scale', desc: 'Managing six-figure funded accounts without emotional bias.', time: '25 min', level: 'Elite' },
+                    { title: 'Liquidity Concepts 101', desc: 'Understanding bank order blocks and fair value gaps.', time: '15 min', level: 'Institutional', link: '#' },
+                    { title: 'Risk Management Architecture', desc: 'The math behind professional position sizing.', time: '10 min', level: 'Expert', link: '#' },
+                    { title: 'Currency Correlation Matrix', desc: 'How to trade pair divergence like a macro fund.', time: '20 min', level: 'Advanced', link: '#' },
+                    { title: 'Psychology of Scale', desc: 'Managing six-figure funded accounts without emotional bias.', time: '25 min', level: 'Elite', link: '#' },
                   ].map((course, i) => (
-                    <div key={i} className="bento-card bg-white opacity-40 grayscale select-none pointer-events-none">
+                    <div key={i} className={cn("bento-card bg-white", tier !== 'Pro' && "opacity-40 grayscale select-none pointer-events-none")}>
                       <div className="flex items-center justify-between mb-5">
                         <div className="px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black text-gray-500 uppercase tracking-widest">{course.level}</div>
                         <span className="text-xs text-text-secondary">{course.time} read</span>
                       </div>
                       <h3 className="text-lg font-bold text-text-primary mb-2">{course.title}</h3>
                       <p className="text-sm text-text-secondary leading-relaxed mb-5">{course.desc}</p>
-                      <button className="text-sm font-bold text-gray-400 flex items-center gap-2">
-                        Locked <ChevronRight className="w-4 h-4" />
+                      <button className={cn("text-sm font-bold flex items-center gap-2", tier !== 'Pro' ? "text-gray-400" : "text-primary hover:gap-3 transition-all")}>
+                        {tier !== 'Pro' ? 'Locked' : 'Start Lesson'} <ChevronRight className="w-4 h-4" />
                       </button>
                     </div>
                   ))}

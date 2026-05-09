@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Filter, TrendingUp, TrendingDown, Clock, MoreHorizontal, Trash2, CheckCircle2 } from 'lucide-react';
+import { Plus, Search, Filter, TrendingUp, TrendingDown, Clock, MoreHorizontal, Trash2, CheckCircle2, Edit2 } from 'lucide-react';
 import { supabase, useAuth } from '../../context/AuthContext';
 import { cn } from '../../lib/utils';
 
@@ -8,12 +8,15 @@ const TradingLog = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  
   const [formData, setFormData] = useState({
     pair: '',
     type: 'Buy',
     entry_price: '',
     lot_size: '',
     status: 'Open',
+    pnl: '',
     notes: ''
   });
 
@@ -41,13 +44,26 @@ const TradingLog = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { error } = await supabase
-        .from('trading_logs')
-        .insert([{ ...formData, user_id: user.id }]);
+      const payload = {
+        ...formData,
+        user_id: user.id,
+        pnl: formData.status === 'Closed' ? Number(formData.pnl) : null
+      };
 
-      if (error) throw error;
-      setIsModalOpen(false);
-      setFormData({ pair: '', type: 'Buy', entry_price: '', lot_size: '', status: 'Open', notes: '' });
+      if (editingId) {
+        const { error } = await supabase
+          .from('trading_logs')
+          .update(payload)
+          .eq('id', editingId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('trading_logs')
+          .insert([payload]);
+        if (error) throw error;
+      }
+
+      closeModal();
       fetchLogs();
     } catch (err) {
       alert(err.message);
@@ -60,9 +76,30 @@ const TradingLog = () => {
     if (!error) fetchLogs();
   };
 
+  const openEditModal = (log) => {
+    setFormData({
+      pair: log.pair,
+      type: log.type,
+      entry_price: log.entry_price,
+      lot_size: log.lot_size,
+      status: log.status || 'Open',
+      pnl: log.pnl || '',
+      notes: log.notes || ''
+    });
+    setEditingId(log.id);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingId(null);
+    setFormData({ pair: '', type: 'Buy', entry_price: '', lot_size: '', status: 'Open', pnl: '', notes: '' });
+  };
+
   // Stats calculation
-  const totalPnL = logs.reduce((sum, log) => sum + (Number(log.pnl) || 0), 0);
-  const winRate = logs.length > 0 ? (logs.filter(l => Number(l.pnl) > 0).length / logs.length * 100).toFixed(1) : 0;
+  const closedLogs = logs.filter(l => l.status === 'Closed');
+  const totalPnL = closedLogs.reduce((sum, log) => sum + (Number(log.pnl) || 0), 0);
+  const winRate = closedLogs.length > 0 ? (closedLogs.filter(l => Number(l.pnl) > 0).length / closedLogs.length * 100).toFixed(1) : 0;
 
   return (
     <div className="space-y-6">
@@ -83,18 +120,18 @@ const TradingLog = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bento-card bg-white p-6">
-          <div className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-1">Total P&L</div>
+          <div className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-1">Realized P&L</div>
           <div className={cn("text-2xl font-black", totalPnL >= 0 ? "text-green-600" : "text-red-600")}>
-            {totalPnL >= 0 ? '+' : ''}{totalPnL.toFixed(2)}
+            {totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
           </div>
         </div>
         <div className="bento-card bg-white p-6">
-          <div className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-1">Win Rate</div>
+          <div className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-1">Win Rate (Closed)</div>
           <div className="text-2xl font-black text-text-primary">{winRate}%</div>
         </div>
         <div className="bento-card bg-white p-6">
           <div className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-1">Total Trades</div>
-          <div className="text-2xl font-black text-text-primary">{logs.length}</div>
+          <div className="text-2xl font-black text-text-primary">{logs.length} <span className="text-xs text-text-secondary font-medium">({logs.filter(l => l.status === 'Open').length} Open)</span></div>
         </div>
       </div>
 
@@ -108,7 +145,7 @@ const TradingLog = () => {
                 <th className="px-6 py-4 text-[10px] font-bold text-text-secondary uppercase tracking-widest">Type</th>
                 <th className="px-6 py-4 text-[10px] font-bold text-text-secondary uppercase tracking-widest">Entry</th>
                 <th className="px-6 py-4 text-[10px] font-bold text-text-secondary uppercase tracking-widest">Size</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-text-secondary uppercase tracking-widest">Status</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-text-secondary uppercase tracking-widest">Status / P&L</th>
                 <th className="px-6 py-4 text-[10px] font-bold text-text-secondary uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
@@ -136,17 +173,25 @@ const TradingLog = () => {
                     <td className="px-6 py-4 text-sm text-text-secondary">{log.entry_price}</td>
                     <td className="px-6 py-4 text-sm text-text-secondary font-mono">{log.lot_size}</td>
                     <td className="px-6 py-4">
-                      <span className={cn(
-                        "flex items-center gap-1.5 text-xs font-bold",
-                        log.status === 'Open' ? "text-primary" : "text-text-secondary"
-                      )}>
-                        <Clock className="w-3 h-3" /> {log.status}
-                      </span>
+                      {log.status === 'Open' ? (
+                        <span className="flex items-center gap-1.5 text-xs font-bold text-primary">
+                          <Clock className="w-3 h-3" /> Open
+                        </span>
+                      ) : (
+                        <span className={cn("flex items-center gap-1.5 text-xs font-bold", Number(log.pnl) >= 0 ? "text-green-600" : "text-red-600")}>
+                          <CheckCircle2 className="w-3 h-3" /> {Number(log.pnl) >= 0 ? '+' : ''}${log.pnl}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button onClick={() => deleteLog(log.id)} className="p-2 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => openEditModal(log)} className="p-2 text-gray-400 hover:text-primary transition-colors" title="Edit Trade">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => deleteLog(log.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors" title="Delete Trade">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -156,11 +201,11 @@ const TradingLog = () => {
         </div>
       </div>
 
-      {/* New Trade Modal */}
+      {/* New/Edit Trade Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl border border-white/20 animate-in fade-in zoom-in duration-200">
-            <h3 className="text-xl font-bold text-text-primary mb-6">Log New Execution</h3>
+            <h3 className="text-xl font-bold text-text-primary mb-6">{editingId ? 'Edit Execution' : 'Log New Execution'}</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -210,21 +255,50 @@ const TradingLog = () => {
                   />
                 </div>
               </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-text-secondary uppercase mb-1.5">Status</label>
+                  <select 
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm"
+                    value={formData.status}
+                    onChange={(e) => setFormData({...formData, status: e.target.value})}
+                  >
+                    <option value="Open">Open</option>
+                    <option value="Closed">Closed</option>
+                  </select>
+                </div>
+                {formData.status === 'Closed' && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-text-secondary uppercase mb-1.5">P&L ($)</label>
+                    <input 
+                      type="number" 
+                      step="any"
+                      required
+                      placeholder="-50 or 150"
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm font-mono"
+                      value={formData.pnl}
+                      onChange={(e) => setFormData({...formData, pnl: e.target.value})}
+                    />
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-[10px] font-bold text-text-secondary uppercase mb-1.5">Log Notes</label>
                 <textarea 
-                  rows="3"
+                  rows="2"
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm"
                   value={formData.notes}
                   onChange={(e) => setFormData({...formData, notes: e.target.value})}
                 />
               </div>
               <div className="flex gap-3 pt-4">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-3 bg-gray-100 text-text-primary rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors">
+                <button type="button" onClick={closeModal} className="flex-1 px-6 py-3 bg-gray-100 text-text-primary rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors">
                   Cancel
                 </button>
                 <button type="submit" className="flex-1 px-6 py-3 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-opacity">
-                  Log Execution
+                  {editingId ? 'Save Changes' : 'Log Execution'}
                 </button>
               </div>
             </form>
