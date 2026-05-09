@@ -32,15 +32,7 @@ const AffiliatePortal = () => {
           .select('*')
           .eq('referrer_id', user.id);
         
-        // Mock data if empty for demonstration of the requested features
-        if (!refData || refData.length === 0) {
-          setReferrals([
-            { id: 1, referred_user_name: 'John Doe', plan_purchased: 'Premium', commission_amount: 15, status: 'Pending', created_at: new Date().toISOString() },
-            { id: 2, referred_user_name: 'Sarah Smith', plan_purchased: 'Pro', commission_amount: 45, status: 'Pending', created_at: new Date(Date.now() - 86400000).toISOString() }
-          ]);
-        } else {
-          setReferrals(refData);
-        }
+        setReferrals(refData || []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -58,12 +50,25 @@ const AffiliatePortal = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleWithdrawRequest = (e) => {
+  const handleWithdrawRequest = async (e) => {
     e.preventDefault();
     
     const totalEarnings = referrals.reduce((sum, r) => sum + (r.commission_amount || 0), 0);
     const paidEarnings = referrals.filter(r => r.status === 'Paid').reduce((sum, r) => sum + (r.commission_amount || 0), 0);
     const pendingPayout = totalEarnings - paidEarnings;
+
+    try {
+      // Log to Supabase
+      await supabase.from('affiliate_payouts').insert({
+        user_id: user.id,
+        amount: pendingPayout,
+        payout_method: withdrawForm.method,
+        payout_details: withdrawForm.details,
+        status: 'Pending'
+      });
+    } catch (err) {
+      console.error('Error logging payout request:', err);
+    }
 
     const subject = encodeURIComponent(`Affiliate Withdrawal Request - $${pendingPayout.toFixed(2)}`);
     const body = encodeURIComponent(`Hello,\n\nI would like to request my affiliate payout.\n\nAmount: $${pendingPayout.toFixed(2)}\nPayout Method: ${withdrawForm.method}\nDetails:\n${withdrawForm.details}\n\nPlease review and process.\n\nThank you.`);

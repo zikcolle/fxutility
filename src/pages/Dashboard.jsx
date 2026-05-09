@@ -55,6 +55,57 @@ const Dashboard = () => {
   const [topUpAmount, setTopUpAmount] = useState(500);
   const [isAutoRenew, setIsAutoRenew] = useState(false);
 
+  const [transactions, setTransactions] = useState([]);
+
+  // Fetch Transactions
+  useEffect(() => {
+    if (!user) return;
+    const fetchTransactions = async () => {
+      try {
+        const { data: creditData } = await supabase
+          .from('credit_transactions')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        const { data: payoutData } = await supabase
+          .from('affiliate_payouts')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        let combined = [];
+        if (creditData) {
+          combined = [...combined, ...creditData.map(tx => ({
+            type: tx.tool_id === 'topup' ? 'Credit Top-Up' : 'Tool Usage',
+            amount: tx.tool_id === 'topup' ? `+${tx.amount} Credits` : `-${tx.amount} Credits`,
+            date: new Date(tx.created_at).toLocaleDateString(),
+            status: 'Completed',
+            color: tx.tool_id === 'topup' ? 'text-green-600' : 'text-text-primary'
+          }))];
+        }
+        if (payoutData) {
+          combined = [...combined, ...payoutData.map(tx => ({
+            type: 'Affiliate Payout',
+            amount: `$${tx.amount.toFixed(2)}`,
+            date: new Date(tx.created_at).toLocaleDateString(),
+            status: tx.status,
+            color: 'text-amber-600'
+          }))];
+        }
+        
+        // Sort combined descending by date
+        combined.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setTransactions(combined.slice(0, 5));
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchTransactions();
+  }, [user]);
+
   // Live Clock
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -473,7 +524,12 @@ const Dashboard = () => {
                         <div className="text-xs text-text-secondary">Automatically bill when plan ends after 1 month</div>
                       </div>
                       <div 
-                        onClick={() => setIsAutoRenew(!isAutoRenew)}
+                        onClick={() => {
+                          setIsAutoRenew(!isAutoRenew);
+                          if (!isAutoRenew) {
+                            window.location.href = `mailto:isaacbrainer4@gmail.com?subject=Enable Auto-Renew for ${user?.email || displayName}&body=Hello, please enable auto-renew for my subscription and send the invoice to my registered email address.`;
+                          }
+                        }}
                         className={cn("w-11 h-6 rounded-full cursor-pointer relative transition-colors", isAutoRenew ? "bg-primary" : "bg-gray-300")}
                       >
                         <div className={cn("absolute top-1 w-4 h-4 bg-white rounded-full transition-all", isAutoRenew ? "right-1" : "left-1")}></div>
@@ -505,22 +561,22 @@ const Dashboard = () => {
                     <span className="text-[10px] font-bold text-text-secondary uppercase bg-gray-100 px-2 py-1 rounded">Recent</span>
                   </h3>
                   <div className="space-y-0">
-                    {[
-                      { type: 'Credit Top-Up', amount: '+$10.00', date: 'Oct 12, 2026', status: 'Completed', color: 'text-green-600' },
-                      { type: 'Monthly Pro Plan', amount: '-$29.99', date: 'Oct 01, 2026', status: 'Completed', color: 'text-text-primary' },
-                      { type: 'Affiliate Payout', amount: '+$50.00', date: 'Sep 28, 2026', status: 'Pending', color: 'text-amber-600' }
-                    ].map((tx, idx) => (
-                      <div key={idx} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
-                        <div>
-                          <div className="font-bold text-sm text-text-primary">{tx.type}</div>
-                          <div className="text-[10px] font-bold text-text-secondary uppercase">{tx.date}</div>
+                    {transactions.length === 0 ? (
+                      <div className="py-6 text-center text-xs text-text-secondary">No recent transactions.</div>
+                    ) : (
+                      transactions.map((tx, idx) => (
+                        <div key={idx} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
+                          <div>
+                            <div className="font-bold text-sm text-text-primary">{tx.type}</div>
+                            <div className="text-[10px] font-bold text-text-secondary uppercase">{tx.date}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className={cn("font-bold text-sm", tx.color)}>{tx.amount}</div>
+                            <div className="text-[10px] font-bold text-text-secondary uppercase">{tx.status}</div>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <div className={cn("font-bold text-sm", tx.color)}>{tx.amount}</div>
-                          <div className="text-[10px] font-bold text-text-secondary uppercase">{tx.status}</div>
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </div>
 
