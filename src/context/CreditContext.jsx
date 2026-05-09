@@ -28,18 +28,15 @@ export const CreditProvider = ({ children }) => {
         .single();
       
       if (error && error.code === 'PGRST116') {
-        // Profile doesn't exist, create it (self-healing)
-        const isCreator = user.email === 'isaacbrainer4@gmail.com';
-        const { data: newProfile, error: createError } = await supabase
+        // Profile doesn't exist — self-heal by creating it (DB trigger may have missed it)
+        const { data: newProfile } = await supabase
           .from('profiles')
-          .insert([
-            { 
-              id: user.id, 
-              credits: isCreator ? 999999 : 50, 
-              tier: isCreator ? 'Pro' : 'Basic',
-              full_name: user.user_metadata?.full_name || 'Trader'
-            }
-          ])
+          .insert([{ 
+            id: user.id, 
+            credits: 50, 
+            tier: 'Basic',
+            full_name: user.user_metadata?.full_name || 'Trader'
+          }])
           .select()
           .single();
         
@@ -56,11 +53,12 @@ export const CreditProvider = ({ children }) => {
     }
   };
 
-  const useCredits = async (amount) => {
+  const useCredits = async (amount, toolId = 'unknown') => {
     if (user) {
-      const { data, error } = await supabase.rpc('deduct_credits', { p_amount: amount });
+      const { data, error } = await supabase.rpc('deduct_credits', { p_amount: amount, p_tool_id: toolId });
       if (error) {
         console.error('Deduction failed:', error.message);
+        alert(`Insufficient credits. You need ${amount} credits for this tool.`);
         return false;
       }
       setCredits(data);

@@ -1,16 +1,128 @@
-# React + Vite
+# FXUTILITY
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Institutional-grade trading tools for the modern retail trader.**
 
-Currently, two official plugins are available:
+FXUTILITY is a credit-based SaaS platform that gives retail forex traders access to the same risk management precision used by professional prop firm desks. Calculate lot sizes, pip values, margin requirements, and more — directly in your browser.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## ✨ Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Tool | Tier | Credits |
+|------|------|---------|
+| Lot Size Calculator | Basic | 2 |
+| Pip Value Intelligence | Basic | 2 |
+| Margin Requirement | Basic | 2 |
+| Profit/Loss Architect | Basic | 2 |
+| Session Overlap Clock | Basic | Free |
+| Prop Firm Guard | Premium | 5 |
+| AI Signal Engine | Premium | 10 |
+| Edge Scanner Pro | Pro | 15 |
 
-## Expanding the ESLint configuration
+New users receive **50 free credits** on signup.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## 🛠 Tech Stack
+
+- **Frontend**: React 19 + Vite 8
+- **Styling**: Tailwind CSS 3
+- **Auth + DB**: Supabase
+- **Routing**: React Router DOM v7
+- **Animations**: Framer Motion
+- **Icons**: Lucide React
+
+---
+
+## 🚀 Local Development
+
+### Prerequisites
+
+- Node.js 18+
+- A [Supabase](https://supabase.com) project with the schema applied
+
+### Setup
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/your-username/fxutility.git
+cd fxutility
+
+# 2. Install dependencies
+npm install
+
+# 3. Copy environment variables
+cp .env.example .env
+
+# 4. Fill in your Supabase credentials (see below)
+# Then start the dev server
+npm run dev
+```
+
+### Environment Variables
+
+Create a `.env` file at the project root with:
+
+```env
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+Both values are found in your Supabase project under **Settings → API**.
+
+---
+
+## 🗄 Database Setup
+
+Run `supabase_production_schema.sql` in the Supabase Dashboard SQL Editor to create:
+- `profiles` — user accounts with credit balance and tier
+- `credit_transactions` — full audit trail of every credit deduction
+- `tool_usage` — analytics table for tool engagement tracking
+
+### Granting Admin Access
+
+To grant admin/unlimited credits to your own account, run this **privately** in the Supabase SQL Editor (never commit admin emails to the repo):
+
+```sql
+UPDATE public.profiles
+SET credits = 999999, tier = 'Pro'
+WHERE id = '<your-user-uuid>';
+```
+
+---
+
+## 📁 Project Structure
+
+```
+src/
+├── components/
+│   ├── tools/          # Individual tool calculators
+│   ├── Navbar.jsx
+│   ├── Footer.jsx
+│   └── ProtectedRoute.jsx
+├── context/
+│   ├── AuthContext.jsx
+│   ├── CreditContext.jsx
+│   └── ThemeContext.jsx
+├── pages/
+│   ├── LandingPage.jsx
+│   ├── Dashboard.jsx
+│   ├── PricingPage.jsx
+│   └── AuthPage.jsx
+└── lib/
+    └── utils.js
+```
+
+---
+
+## 🔐 Security Notes
+
+- Admin privileges are managed exclusively via the Supabase Dashboard — no emails or special logic in client code
+- All credit deductions run through a `SECURITY DEFINER` PostgreSQL function server-side
+- Row Level Security (RLS) is enabled on all tables
+
+---
+
+## 📄 License
+
+MIT — built by [Isaac Ogunwale](https://github.com/your-username)

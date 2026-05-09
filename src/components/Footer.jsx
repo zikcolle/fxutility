@@ -25,12 +25,12 @@ const Footer = () => {
           </div>
 
           <div>
-            <h4 className="font-bold text-text-primary mb-6">Terminal</h4>
+            <h4 className="font-bold text-text-primary mb-6">Tools</h4>
             <ul className="space-y-4 text-sm text-text-secondary">
-              <li><Link to="/dashboard" className="hover:text-primary transition-colors">Risk Architect</Link></li>
-              <li><Link to="/dashboard" className="hover:text-primary transition-colors">AI Signal Feed</Link></li>
-              <li><Link to="/dashboard" className="hover:text-primary transition-colors">Margin Calculator</Link></li>
-              <li><Link to="/dashboard" className="hover:text-primary transition-colors">Edge Finder</Link></li>
+              <li><Link to="/dashboard" className="hover:text-primary transition-colors">Lot Size Calculator</Link></li>
+              <li><Link to="/dashboard" className="hover:text-primary transition-colors">Margin Requirement</Link></li>
+              <li><Link to="/dashboard" className="hover:text-primary transition-colors">Profit Calculator</Link></li>
+              <li><Link to="/dashboard/affiliate" className="hover:text-primary transition-colors">Affiliate Program</Link></li>
             </ul>
           </div>
 
@@ -47,16 +47,16 @@ const Footer = () => {
           <div>
             <h4 className="font-bold text-text-primary mb-6">Legal</h4>
             <ul className="space-y-4 text-sm text-text-secondary">
-              <li><Link to="/" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
-              <li><Link to="/" className="hover:text-primary transition-colors">Terms of Service</Link></li>
-              <li><Link to="/" className="hover:text-primary transition-colors">Risk Disclosure</Link></li>
-              <li><Link to="/" className="hover:text-primary transition-colors">Cookie Policy</Link></li>
+              <li><Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
+              <li><Link to="/risk" className="hover:text-primary transition-colors">Risk Disclosure</Link></li>
+              <li><Link to="/cookies" className="hover:text-primary transition-colors">Cookie Policy</Link></li>
             </ul>
           </div>
         </div>
 
         <div className="pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-bold text-text-secondary uppercase tracking-widest">
-          <p>© 2026 FXUTILITY ELITE. ALL RIGHTS RESERVED.</p>
+          <p>© 2026 FXUTILITY ELITE. DEVELOPED BY KIVALL TECH WITH INSPIRATION BY ZIKCOLLE.</p>
           <p>ENGINEERED FOR PRECISION.</p>
         </div>
       </div>

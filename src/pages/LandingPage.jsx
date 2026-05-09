@@ -26,7 +26,7 @@ const LandingPage = () => {
             animate={{ opacity: 1, y: 0 }}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent-blue/50 text-primary font-bold text-xs uppercase tracking-widest mb-8"
           >
-            <Zap className="w-4 h-4" /> Next-Gen Trading Terminal
+            <Zap className="w-4 h-4" /> Next-Gen Intelligence Suite
           </motion.div>
           
           <motion.h1 
@@ -44,7 +44,7 @@ const LandingPage = () => {
             transition={{ delay: 0.2 }}
             className="text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-12"
           >
-            MarketFlow bridges the gap between retail trading and high-frequency algorithms. Access precision tools used by professional desks.
+            FXUTILITY bridges the gap between retail traders and institutional-grade precision. Access the same intelligence tools used by professional prop firm desks — right in your browser.
           </motion.p>
           
           <motion.div 
@@ -53,8 +53,8 @@ const LandingPage = () => {
             transition={{ delay: 0.3 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <Link to="/dashboard" className="btn-primary w-full sm:w-auto px-10 py-4 flex items-center justify-center gap-2">
-              Start Free Trial <ArrowRight className="w-5 h-5" />
+            <Link to="/signup" className="btn-primary w-full sm:w-auto px-10 py-4 flex items-center justify-center gap-2">
+              Start Free — 50 Credits Included <ArrowRight className="w-5 h-5" />
             </Link>
             <Link to="/pricing" className="btn-secondary w-full sm:w-auto px-10 py-4">
               View Pricing
@@ -126,7 +126,7 @@ const LandingPage = () => {
                       <div className="w-3 h-3 rounded-full bg-yellow-400" />
                       <div className="w-3 h-3 rounded-full bg-green-400" />
                     </div>
-                    <div className="text-[10px] font-bold text-text-secondary tracking-widest uppercase">FXUTILITY TERMINAL V1.2</div>
+                    <div className="text-[10px] font-bold text-text-secondary tracking-widest uppercase">FXUTILITY TOOLS LAB V1.2</div>
                     <div className="w-12" />
                   </div>
                   
@@ -184,7 +184,7 @@ const LandingPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="p-8 rounded-2xl bg-gray-50 border border-gray-100 text-left group hover:border-primary/20 transition-colors">
               <h4 className="font-bold text-text-primary mb-2">Technical Support</h4>
-              <p className="text-sm text-text-secondary mb-4">Immediate assistance with terminal access.</p>
+              <p className="text-sm text-text-secondary mb-4">Immediate assistance with platform access.</p>
               <a href="mailto:support@fxutility.elite" className="text-primary text-sm font-bold flex items-center gap-2 group-hover:gap-3 transition-all">
                 Email Support <ArrowRight className="w-4 h-4" />
               </a>

@@ -47,7 +47,7 @@ const AuthPage = ({ type }) => {
               {isLogin ? 'Welcome Back' : 'Create Account'}
             </h1>
             <p className="text-sm text-text-secondary">
-              {isLogin ? 'Enter your credentials to access the terminal.' : 'Start your journey with institutional precision.'}
+              {isLogin ? 'Enter your credentials to access the intelligence hub.' : 'Start your journey with institutional precision.'}
             </p>
           </div>
 
@@ -108,7 +108,7 @@ const AuthPage = ({ type }) => {
               disabled={loading}
               className="btn-primary w-full py-4 text-sm font-bold shadow-lg shadow-primary/20 disabled:bg-gray-300"
             >
-              {loading ? 'Processing...' : (isLogin ? 'Sign In to Terminal' : 'Create Elite Account')}
+              {loading ? 'Processing...' : (isLogin ? 'Sign In to Intelligence Hub' : 'Create Elite Account')}
             </button>
           </form>
 
