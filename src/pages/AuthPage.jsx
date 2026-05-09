@@ -122,13 +122,13 @@ const AuthPage = ({ type }) => {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <button className="flex items-center justify-center gap-3 py-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
-              <Chrome className="w-5 h-5 text-text-primary" />
-              <span className="text-sm font-bold text-text-primary">Google</span>
+            <button disabled className="flex items-center justify-center gap-2 py-3 border border-gray-100 rounded-xl bg-gray-50/50 cursor-not-allowed opacity-60">
+              <Chrome className="w-4 h-4 text-text-primary" />
+              <span className="text-[10px] font-bold text-text-primary uppercase tracking-tighter">Google (Soon)</span>
             </button>
-            <button className="flex items-center justify-center gap-3 py-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
-              <Github className="w-5 h-5 text-text-primary" />
-              <span className="text-sm font-bold text-text-primary">GitHub</span>
+            <button disabled className="flex items-center justify-center gap-2 py-3 border border-gray-100 rounded-xl bg-gray-50/50 cursor-not-allowed opacity-60">
+              <Github className="w-4 h-4 text-text-primary" />
+              <span className="text-[10px] font-bold text-text-primary uppercase tracking-tighter">GitHub (Soon)</span>
             </button>
           </div>
 
