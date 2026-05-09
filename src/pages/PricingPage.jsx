@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Check, Zap, Shield, Crown, ArrowUpRight, Sun, Moon, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useCredit } from '../context/CreditContext';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { supabase } from '../context/AuthContext';
 import { cn } from '../lib/utils';
 import Footer from '../components/Footer';
 
 const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
-  const [dark, setDark] = useState(true);
   const [yearly, setYearly] = useState(false);
   const [cur, setCur] = useState({ code: 'NGN', rate: 1, country: null });
   const [curLoading, setCurLoading] = useState(true);
   const { tier: currentTier, setTier, refreshProfile } = useCredit();
   const { user } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
+  const navigate = useNavigate();
 
   // Currency detection
   useEffect(() => {
@@ -242,12 +245,8 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
     handler.openIframe();
   };
 
-  const handleUpgrade = (plan) => {
-    if (onUpgrade) {
-      onUpgrade(plan.id);
-    } else {
-      payWithPaystack(plan);
-    }
+  const handleTopUpCredits = () => {
+    navigate('/dashboard?topup=true');
   };
 
   return (
@@ -259,8 +258,8 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
       `}</style>
 
       <div className={cn(
-        "min-h-screen transition-colors duration-300",
-        dark ? "bg-[#0a0a0b] text-white" : "bg-[#f0f2f5] text-[#0f172a]"
+        "min-h-screen transition-colors duration-300 pt-20",
+        isDark ? "bg-[#0a0a0b] text-white" : "bg-[#f0f2f5] text-[#0f172a]"
       )}>
 
         {/* Header */}
@@ -282,10 +281,10 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
                 {curLoading ? '...' : `${cur.country || 'Nigeria'} · ${cur.code}`}
               </div>
               <button
-                onClick={() => setDark(!dark)}
+                onClick={toggleTheme}
                 className="w-8 h-8 rounded-lg border border-[#1e1e22] bg-[#1a1a1c] flex items-center justify-center hover:bg-[#1e1e22] transition-colors"
               >
-                {dark ? <Sun className="w-4 h-4 text-[#888888]" /> : <Moon className="w-4 h-4 text-[#64748b]" />}
+                {isDark ? <Sun className="w-4 h-4 text-[#888888]" /> : <Moon className="w-4 h-4 text-[#64748b]" />}
               </button>
             </div>
           </div>
@@ -294,14 +293,14 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
           <div className="flex items-center justify-center gap-4 mb-12">
             <span className={cn(
               "text-sm font-semibold transition-colors",
-              !yearly ? (dark ? "text-white" : "text-[#0f172a]") : (dark ? "text-[#888888]" : "text-[#64748b]")
+              !yearly ? (isDark ? "text-white" : "text-[#0f172a]") : (isDark ? "text-[#888888]" : "text-[#64748b]")
             )}>Monthly</span>
             <div className="relative">
               <button
                 onClick={() => setYearly(!yearly)}
                 className={cn(
                   "w-14 h-7 rounded-full border transition-colors",
-                  dark ? "bg-[#1a1a1c] border-[#1e1e22]" : "bg-white border-[#e2e8f0]"
+                  isDark ? "bg-[#1a1a1c] border-[#1e1e22]" : "bg-white border-[#e2e8f0]"
                 )}
               >
                 <motion.div
@@ -314,7 +313,7 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
             <div className="flex items-center gap-2">
               <span className={cn(
                 "text-sm font-semibold transition-colors",
-                yearly ? (dark ? "text-white" : "text-[#0f172a]") : (dark ? "text-[#888888]" : "text-[#64748b]")
+                yearly ? (isDark ? "text-white" : "text-[#0f172a]") : (isDark ? "text-[#888888]" : "text-[#64748b]")
               )}>Yearly</span>
               <span className="text-[10px] font-bold bg-[#22c55e] text-white px-2 py-0.5 rounded-full uppercase tracking-widest">
                 Save 20%
@@ -337,7 +336,7 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
                   transition={{ delay: idx * 0.1 }}
                   className={cn(
                     "relative p-6 rounded-xl border transition-all",
-                    dark ? "bg-[#111113] border-[#1c1c20]" : "bg-white border-[#e2e8f0]",
+                    isDark ? "bg-[#111113] border-[#1c1c20]" : "bg-white border-[#e2e8f0]",
                     plan.popular && "border-[#2563eb] border-2"
                   )}
                 >
@@ -349,7 +348,7 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
 
                   <div className={cn(
                     "w-12 h-12 rounded-xl flex items-center justify-center mb-4",
-                    dark
+                    isDark
                       ? plan.id === 'basic' ? "bg-[#1a2035]" : plan.id === 'premium' ? "bg-[#1e1535]" : "bg-[#251c0a]"
                       : plan.id === 'basic' ? "bg-[#dbeafe]" : plan.id === 'premium' ? "bg-[#ede9fe]" : "bg-[#fef3c7]"
                   )}>
@@ -359,7 +358,7 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
                   <h3 className="text-lg font-bold mb-2">{plan.name}</h3>
                   <p className={cn(
                     "text-sm mb-6 leading-relaxed",
-                    dark ? "text-[#888888]" : "text-[#64748b]"
+                    isDark ? "text-[#888888]" : "text-[#64748b]"
                   )}>{plan.tagline}</p>
 
                   <div className="mb-6">
@@ -369,13 +368,13 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
                       </span>
                       <span className={cn(
                         "text-sm",
-                        dark ? "text-[#888888]" : "text-[#64748b]"
+                        isDark ? "text-[#888888]" : "text-[#64748b]"
                       )}>/{yearly ? 'yr' : 'mo'}</span>
                     </div>
                     {yearly && (
                       <div className={cn(
                         "text-xs",
-                        dark ? "text-[#3a3a3e]" : "text-[#b0bec5]"
+                        isDark ? "text-[#3a3a3e]" : "text-[#b0bec5]"
                       )}>
                         ≈ {getYearlyEquivalent(plan.monthlyPrice)}/mo billed annually
                       </div>
@@ -403,7 +402,7 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
                     <div className="mb-4">
                       <div className={cn(
                         "text-xs font-bold uppercase tracking-widest mb-3",
-                        dark ? "text-[#888888]" : "text-[#64748b]"
+                        isDark ? "text-[#888888]" : "text-[#64748b]"
                       )}>
                         {inheritedLabel}
                       </div>
@@ -448,7 +447,7 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
                           </div>
                           <div className={cn(
                             "text-xs mt-1",
-                            dark ? "text-[#3a3a3e]" : "text-[#b0bec5]"
+                            isDark ? "text-[#3a3a3e]" : "text-[#b0bec5]"
                           )}>
                             {tool.desc}
                           </div>
@@ -464,7 +463,7 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
           {/* AI Credits Footer */}
           <div className={cn(
             "mt-12 p-6 rounded-xl border",
-            dark ? "bg-[#111113] border-[#1c1c20]" : "bg-white border-[#e2e8f0]"
+            isDark ? "bg-[#111113] border-[#1c1c20]" : "bg-white border-[#e2e8f0]"
           )}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -475,13 +474,16 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
                   <div className="font-bold text-sm mb-1">AI-powered tools use credits</div>
                   <div className={cn(
                     "text-xs",
-                    dark ? "text-[#888888]" : "text-[#64748b]"
+                    isDark ? "text-[#888888]" : "text-[#64748b]"
                   )}>
                     Your plan unlocks tool access. AI Signal Engine (Premium+) and Edge Scanner Pro (Pro) consume credits per use — top up any time. No wasted monthly allocations.
                   </div>
                 </div>
               </div>
-              <button className="text-[#2563eb] hover:underline text-sm font-bold">
+              <button 
+                onClick={handleTopUpCredits}
+                className="text-[#2563eb] hover:underline text-sm font-bold"
+              >
                 Top up credits →
               </button>
             </div>

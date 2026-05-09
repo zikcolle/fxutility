@@ -140,6 +140,16 @@ const Dashboard = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Check for topup URL parameter
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    if (urlParams.get('topup') === 'true') {
+      setShowTopUpModal(true);
+      // Clean up URL
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.search, navigate]);
+
   // Determine current active tab based on path
   const getActiveTab = () => {
     const path = location.pathname;
