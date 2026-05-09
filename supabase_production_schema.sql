@@ -184,3 +184,40 @@ ALTER TABLE public.referrals ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Referrers can view own referrals." ON public.referrals
   FOR SELECT USING (auth.uid() = referrer_id);
+
+-- Add missing columns to referrals if they don't exist
+ALTER TABLE public.referrals ADD COLUMN IF NOT EXISTS referred_user_name TEXT;
+ALTER TABLE public.referrals ADD COLUMN IF NOT EXISTS plan_purchased TEXT;
+
+-- 9. Subscriptions Table
+CREATE TABLE IF NOT EXISTS public.subscriptions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  plan_tier TEXT CHECK (plan_tier IN ('Premium', 'Pro', 'Lifetime')) NOT NULL,
+  status TEXT DEFAULT 'Active' CHECK (status IN ('Active', 'Canceled', 'Expired')),
+  auto_renew BOOLEAN DEFAULT true,
+  current_period_start TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  current_period_end TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own subscriptions." ON public.subscriptions
+  FOR SELECT USING (auth.uid() = user_id);
+
+-- 10. Affiliate Payout Requests Table
+CREATE TABLE IF NOT EXISTS public.affiliate_payouts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  amount NUMERIC NOT NULL,
+  payout_method TEXT NOT NULL,
+  payout_details TEXT NOT NULL,
+  status TEXT DEFAULT 'Pending' CHECK (status IN ('Pending', 'Processing', 'Paid', 'Rejected')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.affiliate_payouts ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own payouts." ON public.affiliate_payouts
+  FOR SELECT USING (auth.uid() = user_id);

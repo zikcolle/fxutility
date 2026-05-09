@@ -229,7 +229,7 @@ const AffiliatePortal = () => {
                 <textarea 
                   required
                   rows="3"
-                  placeholder={withdrawForm.method === 'BankTransfer' ? "E.g. GTBank\nIsaac Ogunwale\n0123456789" : `Enter your ${withdrawForm.method} email`}
+                  placeholder={withdrawForm.method === 'BankTransfer' ? "E.g. GTBank\nJohn Doe\n0123456789" : `Enter your ${withdrawForm.method} email`}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm"
                   value={withdrawForm.details}
                   onChange={(e) => setWithdrawForm({...withdrawForm, details: e.target.value})}

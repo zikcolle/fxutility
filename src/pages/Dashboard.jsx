@@ -162,16 +162,6 @@ const Dashboard = () => {
           ))}
         </div>
 
-        {/* AdSense Sidebar Slot - Only for Basic Users */}
-        {tier === 'Basic' && (
-          <div className="my-6">
-            <div className="w-full aspect-[4/3] bg-gray-50 border border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center p-4 text-center">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Advertisement</span>
-              <div className="text-[10px] text-gray-300 italic">AdSense Slot #1</div>
-            </div>
-          </div>
-        )}
-
         {/* Sidebar Footer */}
         <div className="space-y-2 pt-4 border-t border-gray-100">
           {/* Credit balance */}
@@ -232,14 +222,22 @@ const Dashboard = () => {
                 </button>
               )}
               <div>
+                <div className="flex items-center gap-2 text-text-secondary text-[11px] sm:text-sm font-medium mb-1">
+                  {activeTool ? (
+                    <>
+                      <span onClick={() => navigate('/dashboard')} className="hover:text-primary cursor-pointer transition-colors">Tools Hub</span>
+                      <ChevronRight className="w-3 h-3" />
+                      <span className="text-primary font-bold">{tools.find(t => t.id === activeTool)?.name}</span>
+                    </>
+                  ) : (
+                    <span>Market Intelligence</span>
+                  )}
+                </div>
                 <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">
                   {activeTool
                     ? tools.find(t => t.id === activeTool)?.name || 'Tool Workstation'
                     : activeTab}
                 </h1>
-                <p className="text-text-secondary text-[11px] sm:text-sm font-medium mt-0.5 opacity-70">
-                  {activeTool ? 'Institutional Execution Mode' : `Market Intelligence • ${displayName}`}
-                </p>
               </div>
             </div>
 
@@ -257,15 +255,6 @@ const Dashboard = () => {
               </div>
             )}
           </header>
-
-          {/* ── AdSense Content Slot 1 ── Only for Basic Users */}
-          {tier === 'Basic' && (
-            <div className="mb-8 hidden sm:block">
-              <div className="w-full h-24 bg-gray-50 border border-dashed border-gray-200 rounded-2xl flex items-center justify-center text-center">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sponsored Feed Content</span>
-              </div>
-            </div>
-          )}
 
           {/* ── Dynamic Route Content ── */}
           <Routes>
@@ -506,13 +495,41 @@ const Dashboard = () => {
                         <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
                       </div>
                     </div>
-                    
-                    {/* Danger Zone / Sign Out */}
-                    <div className="pt-4 lg:hidden">
-                      <button onClick={signOut} className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-red-50 text-red-600 font-bold text-sm hover:bg-red-100 rounded-xl transition-colors border border-red-100">
-                        <LogOut className="w-5 h-5" /> Sign Out
-                      </button>
-                    </div>
+                  </div>
+                </div>
+
+                {/* Transaction History */}
+                <div className="bento-card p-6 bg-white">
+                  <h3 className="font-bold text-base text-text-primary mb-5 flex items-center justify-between">
+                    Transaction History
+                    <span className="text-[10px] font-bold text-text-secondary uppercase bg-gray-100 px-2 py-1 rounded">Recent</span>
+                  </h3>
+                  <div className="space-y-0">
+                    {[
+                      { type: 'Credit Top-Up', amount: '+$10.00', date: 'Oct 12, 2026', status: 'Completed', color: 'text-green-600' },
+                      { type: 'Monthly Pro Plan', amount: '-$29.99', date: 'Oct 01, 2026', status: 'Completed', color: 'text-text-primary' },
+                      { type: 'Affiliate Payout', amount: '+$50.00', date: 'Sep 28, 2026', status: 'Pending', color: 'text-amber-600' }
+                    ].map((tx, idx) => (
+                      <div key={idx} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
+                        <div>
+                          <div className="font-bold text-sm text-text-primary">{tx.type}</div>
+                          <div className="text-[10px] font-bold text-text-secondary uppercase">{tx.date}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className={cn("font-bold text-sm", tx.color)}>{tx.amount}</div>
+                          <div className="text-[10px] font-bold text-text-secondary uppercase">{tx.status}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Danger Zone / Sign Out */}
+                <div className="pt-4 lg:hidden">
+                  <button onClick={signOut} className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-red-50 text-red-600 font-bold text-sm hover:bg-red-100 rounded-xl transition-colors border border-red-100">
+                    <LogOut className="w-5 h-5" /> Sign Out
+                  </button>
+                </div>
                   </div>
                 </div>
               </div>

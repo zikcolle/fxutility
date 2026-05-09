@@ -42,9 +42,10 @@ const LotSizeCalculator = () => {
     
     // If user is not logged in, we show them a "demo" result and pop the wall
     if (!user) {
-      const pairInfo = PAIR_DATA[pair];
+      const pairInfo = PAIR_DATA[pair.toUpperCase()];
+      const pipValue = pairInfo ? pairInfo.pipValue : 10;
+      const label = pairInfo ? pairInfo.label : pair.toUpperCase();
       const riskAmt = (parseFloat(balance) * parseFloat(riskPercent)) / 100;
-      const pipValue = pairInfo.pipValue;
       const lotSize = riskAmt / (parseFloat(stopLoss) * pipValue);
       const minLots = Math.max(0.01, Math.round(lotSize * 100) / 100);
       
@@ -53,7 +54,7 @@ const LotSizeCalculator = () => {
         riskAmount: riskAmt.toFixed(2),
         positionValue: (minLots * 100000).toFixed(0),
         pipValuePerLot: pipValue.toFixed(2),
-        pair: pairInfo.label
+        pair: label
       });
       setLoading(false);
       setShowAuthWall(true);
@@ -66,9 +67,11 @@ const LotSizeCalculator = () => {
       return;
     }
 
-    const pairInfo = PAIR_DATA[pair];
+    const pairInfo = PAIR_DATA[pair.toUpperCase()];
+    const pipValue = pairInfo ? pairInfo.pipValue : 10; // default to $10 per standard lot
+    const label = pairInfo ? pairInfo.label : pair.toUpperCase();
+    
     const riskAmt = (parseFloat(balance) * parseFloat(riskPercent)) / 100;
-    const pipValue = pairInfo.pipValue; // per standard lot in USD
     const lotSize = riskAmt / (parseFloat(stopLoss) * pipValue);
     const minLots = Math.max(0.01, Math.round(lotSize * 100) / 100);
     
@@ -77,7 +80,7 @@ const LotSizeCalculator = () => {
       riskAmount: riskAmt.toFixed(2),
       positionValue: (minLots * 100000).toFixed(0),
       pipValuePerLot: pipValue.toFixed(2),
-      pair: pairInfo.label
+      pair: label
     });
     setLoading(false);
   };
@@ -107,19 +110,23 @@ const LotSizeCalculator = () => {
                 Currency Pair <Info className="w-3 h-3" />
               </label>
               <div className="relative">
-                <select
+                <input
+                  type="text"
+                  list="lot-pair-options"
                   value={pair}
-                  onChange={(e) => { setPair(e.target.value); setResult(null); }}
-                  className="w-full appearance-none px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold text-text-primary pr-10 cursor-pointer"
-                >
+                  onChange={(e) => { setPair(e.target.value.toUpperCase()); setResult(null); }}
+                  placeholder="e.g., EURUSD or XAUUSD"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold text-text-primary pr-10 uppercase"
+                />
+                <datalist id="lot-pair-options">
                   {PAIRS.map(p => (
                     <option key={p} value={p}>{PAIR_DATA[p].label}</option>
                   ))}
-                </select>
+                </datalist>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
               </div>
               <p className="text-[10px] text-text-secondary">
-                Pip value: <span className="font-bold text-primary">${PAIR_DATA[pair].pipValue}/pip</span> per standard lot
+                Pip value: <span className="font-bold text-primary">${PAIR_DATA[pair.toUpperCase()]?.pipValue || 10}/pip</span> per standard lot
               </p>
             </div>
 
@@ -217,6 +224,35 @@ const LotSizeCalculator = () => {
               onSecondaryAction={() => window.location.href = '/login'}
             />
           )}
+        </div>
+      </div>
+
+      {/* Educational / FAQ Content for SEO & Ad Space */}
+      <div className="mt-12 space-y-6 animate-in fade-in duration-700">
+        <h3 className="text-xl font-bold text-text-primary">Understanding Position Sizing & Risk</h3>
+        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm space-y-6">
+          
+          <div>
+            <h4 className="font-bold text-text-primary mb-2">Why is Position Sizing Important?</h4>
+            <p className="text-sm text-text-secondary leading-relaxed">
+              Proper position sizing is the most critical element of risk management. By sizing your trades based on your account balance and stop loss distance, you ensure that any single loss will only dent your account by a fixed percentage (e.g., 1%). This prevents devastating drawdowns and preserves trading capital for future opportunities.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-bold text-text-primary mb-2">How is Lot Size Calculated?</h4>
+            <p className="text-sm text-text-secondary leading-relaxed">
+              Lot size is calculated by taking your total risk amount in dollars and dividing it by the product of your stop loss in pips and the pip value for the specific currency pair. Formula: <code>Lot Size = Risk Amount / (Stop Loss in Pips × Pip Value per Standard Lot)</code>.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-bold text-text-primary mb-2">How do I use Custom Pairs?</h4>
+            <p className="text-sm text-text-secondary leading-relaxed">
+              You can manually type any symbol into the Currency Pair input box. The system automatically defaults unknown pairs and indices to a base pip value of $10 per lot. Always verify index and crypto contract sizes with your specific broker as they may differ significantly from standard forex pairs.
+            </p>
+          </div>
+
         </div>
       </div>
     </div>

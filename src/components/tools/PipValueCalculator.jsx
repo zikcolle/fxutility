@@ -46,8 +46,10 @@ const PipValueCalculator = () => {
       return;
     }
 
-    const selectedPair = pairs.find(p => p.name === pair);
-    const pipValue = parseFloat(lotSize) * selectedPair.value;
+    const selectedPair = pairs.find(p => p.name.toUpperCase() === pair.toUpperCase());
+    // Fallback to $10/pip standard for custom pairs
+    const multiplier = selectedPair ? selectedPair.value : 10;
+    const pipValue = parseFloat(lotSize) * multiplier;
     
     setResult({
       perPip: pipValue.toFixed(2),
@@ -86,13 +88,17 @@ const PipValueCalculator = () => {
 
             <div className="space-y-2">
               <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Currency Pair</label>
-              <select 
+              <input 
+                type="text"
+                list="pair-options"
                 value={pair}
-                onChange={(e) => setPair(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold text-text-primary appearance-none cursor-pointer"
-              >
-                {pairs.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
-              </select>
+                onChange={(e) => setPair(e.target.value.toUpperCase())}
+                placeholder="e.g., EURUSD or XAUUSD"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold text-text-primary uppercase"
+              />
+              <datalist id="pair-options">
+                {pairs.map(p => <option key={p.name} value={p.name} />)}
+              </datalist>
             </div>
 
             <button 
@@ -154,6 +160,35 @@ const PipValueCalculator = () => {
               )}
             </>
           )}
+        </div>
+      </div>
+
+      {/* Educational / FAQ Content for SEO & Ad Space */}
+      <div className="mt-12 space-y-6 animate-in fade-in duration-700">
+        <h3 className="text-xl font-bold text-text-primary">Mastering Pip Values & Risk Management</h3>
+        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm space-y-6">
+          
+          <div>
+            <h4 className="font-bold text-text-primary mb-2">What is a Pip Value?</h4>
+            <p className="text-sm text-text-secondary leading-relaxed">
+              A "pip" (Percentage in Point) is the smallest standardized price move in forex trading. The pip value tells you exactly how much money a 1-pip movement is worth based on your lot size. Calculating this before entering a trade is critical for determining where to place your stop loss and take profit.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-bold text-text-primary mb-2">Why does the Pip Value change?</h4>
+            <p className="text-sm text-text-secondary leading-relaxed">
+              For currency pairs where the quote currency (the second currency in the pair) matches your account currency, the pip value is fixed (e.g., $10 per standard lot for EUR/USD on a USD account). However, for pairs like USD/JPY or EUR/GBP, the pip value fluctuates based on the current exchange rate between the quote currency and your account currency.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-bold text-text-primary mb-2">How to use custom pairs?</h4>
+            <p className="text-sm text-text-secondary leading-relaxed">
+              You can manually type any custom asset symbol (like XAUUSD or US30) into the input box. For non-standard pairs or indices, the calculator defaults to a base $10 multiplier. Make sure to double-check index point values with your specific broker as they may vary.
+            </p>
+          </div>
+
         </div>
       </div>
     </div>
