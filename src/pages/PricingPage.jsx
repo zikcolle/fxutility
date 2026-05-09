@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Check, Zap, Shield, Crown, HelpCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Check, Zap, Shield, Crown, ArrowUpRight, Sun, Moon, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCredit } from '../context/CreditContext';
 import { useAuth } from '../context/AuthContext';
@@ -7,55 +7,183 @@ import { supabase } from '../context/AuthContext';
 import { cn } from '../lib/utils';
 import Footer from '../components/Footer';
 
-const PricingPage = () => {
-  const [billingCycle, setBillingCycle] = useState('monthly');
+const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
+  const [dark, setDark] = useState(true);
+  const [yearly, setYearly] = useState(false);
+  const [cur, setCur] = useState({ code: 'NGN', rate: 1, country: null });
+  const [curLoading, setCurLoading] = useState(true);
   const { tier: currentTier, setTier, refreshProfile } = useCredit();
   const { user } = useAuth();
 
+  // Currency detection
+  useEffect(() => {
+    const detectCurrency = async () => {
+      try {
+        const ipResponse = await fetch('https://ipapi.co/json/');
+        const ipData = await ipResponse.json();
+
+        if (ipData.currency !== 'NGN') {
+          const rateResponse = await fetch('https://open.er-api.com/v6/latest/NGN');
+          const rateData = await rateResponse.json();
+          setCur({
+            code: ipData.currency,
+            rate: rateData.rates[ipData.currency] || 1,
+            country: ipData.country_name
+          });
+        } else {
+          setCur({
+            code: 'NGN',
+            rate: 1,
+            country: ipData.country_name
+          });
+        }
+      } catch (error) {
+        console.error('Currency detection failed:', error);
+        setCur({ code: 'NGN', rate: 1, country: null });
+      } finally {
+        setCurLoading(false);
+      }
+    };
+
+    detectCurrency();
+  }, []);
+
+  const loadPaystackScript = () => {
+    const scriptUrl = 'https://js.paystack.co/v1/inline.js';
+    return new Promise((resolve, reject) => {
+      if (window.PaystackPop) {
+        resolve();
+        return;
+      }
+
+      const existingScript = document.querySelector(`script[src="${scriptUrl}"]`);
+      if (existingScript) {
+        existingScript.addEventListener('load', resolve);
+        existingScript.addEventListener('error', () => reject(new Error('Failed to load Paystack script.')));
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = scriptUrl;
+      script.async = true;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error('Failed to load Paystack script.'));
+      document.head.appendChild(script);
+    });
+  };
+
+  const formatPrice = (ngnAmount) => {
+    if (curLoading) return '—';
+    const converted = ngnAmount * cur.rate;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: cur.code,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(converted);
+  };
+
+  const getYearlyEquivalent = (monthlyAmount) => {
+    if (curLoading) return '—';
+    const yearlyTotal = monthlyAmount * 12 * 0.8; // 20% discount
+    const monthlyEquivalent = yearlyTotal / 12;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: cur.code,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(monthlyEquivalent);
+  };
+
   const plans = [
     {
+      id: 'basic',
       name: "Basic",
-      price: billingCycle === 'monthly' ? "NGN 0" : "NGN 0",
-      credits: "50 Credits/mo",
-      creditAmount: 50,
-      desc: "Perfect for beginners and casual traders.",
+      monthlyPrice: 0,
+      yearlyPrice: 0,
+      tagline: "Perfect for beginners and casual traders.",
       icon: Shield,
-      color: "bg-blue-50 text-blue-600",
-      amount: 0,
-      features: ["All Standard Calculators", "Daily Market Recap", "Email Support", "Single Device Access"]
+      tools: [
+        { name: "Lot Size Calculator", desc: "Protect 1–2% risk per trade", free: false },
+        { name: "Pip Value Intelligence", desc: "Exact pip value across all pairs", free: false },
+        { name: "Margin Requirement", desc: "Broker margin for any position", free: false },
+        { name: "Profit/Loss Architect", desc: "P&L projection before entry", free: false },
+        { name: "Currency Strength Meter", desc: "Real-time 8-pair ranking", free: true },
+        { name: "Session Overlap", desc: "Live market session clock", free: true }
+      ]
     },
     {
+      id: 'premium',
       name: "Premium",
-      price: billingCycle === 'monthly' ? "NGN 10k" : "NGN 100k",
-      credits: "1,500 Credits/mo",
-      creditAmount: billingCycle === 'monthly' ? 1500 : 18000,
-      desc: "For serious traders needing more precision.",
+      monthlyPrice: 10000,
+      yearlyPrice: 100000,
+      tagline: "For serious traders needing more precision.",
       icon: Zap,
-      color: "bg-purple-50 text-purple-600",
-      amount: billingCycle === 'monthly' ? 10000 : 100000, // NGN
       popular: true,
-      features: ["AI Setup Alerts", "Volatility Heatmaps", "Premium Discord Access", "Priority API Access", "Multiple Device Access"]
+      tools: [
+        { name: "Prop Firm Guard", desc: "Real-time drawdown tracker", ai: false },
+        { name: "Correlation Matrix", desc: "28-pair correlation heatmap", ai: false },
+        { name: "AI Signal Engine", desc: "Neural network trade setups", ai: true }
+      ],
+      inherited: ['basic']
     },
     {
+      id: 'pro',
       name: "Pro",
-      price: billingCycle === 'monthly' ? "NGN 25k" : "NGN 250k",
-      credits: "50,000 Credits/mo",
-      creditAmount: billingCycle === 'monthly' ? 50000 : 600000,
-      desc: "Unlimited power for high-frequency pros.",
+      monthlyPrice: 25000,
+      yearlyPrice: 250000,
+      tagline: "Unlimited power for high-frequency pros.",
       icon: Crown,
-      color: "bg-orange-50 text-orange-600",
-      amount: billingCycle === 'monthly' ? 25000 : 250000, // NGN
-      features: ["Institutional Edge Scanner", "Custom Neural Models", "1-on-1 Strategy Session", "Custom Webhooks", "Zero Latency Data"]
+      tools: [
+        { name: "Edge Scanner Pro", desc: "High-probability edge detection", ai: true },
+        { name: "Alert Manager", desc: "Custom trade alert system", ai: false },
+        { name: "Educational Lab", desc: "Institutional trading education", ai: false }
+      ],
+      inherited: ['basic', 'premium']
     }
   ];
 
-  const payWithPaystack = (plan) => {
+  const getPlanState = (planId) => {
+    const planIndex = { basic: 0, premium: 1, pro: 2 }[planId];
+    const currentIndex = { basic: 0, premium: 1, pro: 2 }[currentPlan];
+
+    if (planIndex === currentIndex) return 'current';
+    if (planIndex < currentIndex) return 'owned';
+    return 'upgrade';
+  };
+
+  const getInheritedTools = (plan) => {
+    if (!plan.inherited) return [];
+
+    const inheritedTools = [];
+    plan.inherited.forEach(inheritedId => {
+      const inheritedPlan = plans.find(p => p.id === inheritedId);
+      if (inheritedPlan) {
+        inheritedTools.push(...inheritedPlan.tools);
+      }
+    });
+    return inheritedTools;
+  };
+
+  const getInheritedLabel = (plan) => {
+    const state = getPlanState(plan.id);
+    if (state === 'current') return null;
+
+    if (currentPlan === 'basic' && plan.id === 'premium') {
+      return "INCLUDES BASIC TOOLS, PLUS:";
+    }
+    if (currentPlan === 'premium' && plan.id === 'pro') {
+      return "YOUR CURRENT TOOLS, PLUS:";
+    }
+    if (currentPlan === 'basic' && plan.id === 'pro') {
+      return "INCLUDES ALL LOWER PLAN TOOLS, PLUS:";
+    }
+    return null;
+  };
+
+  const payWithPaystack = async (plan) => {
     if (!user) {
       alert("Please sign in to upgrade.");
-      return;
-    }
-    if (!window.PaystackPop) {
-      alert("Paystack could not load. Please refresh and try again.");
       return;
     }
     if (!import.meta.env.VITE_PAYSTACK_PUBLIC_KEY) {
@@ -63,24 +191,37 @@ const PricingPage = () => {
       return;
     }
 
+    try {
+      await loadPaystackScript();
+    } catch (error) {
+      console.error(error);
+      alert("Paystack could not load. Please refresh and try again.");
+      return;
+    }
+
+    if (!window.PaystackPop) {
+      alert("Paystack could not load. Please refresh and try again.");
+      return;
+    }
+
+    const amount = yearly ? plan.yearlyPrice : plan.monthlyPrice;
     const handler = window.PaystackPop.setup({
       key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
       email: user.email,
-      amount: plan.amount * 100, // Kobo
+      amount: amount * 100, // Kobo
       currency: "NGN",
       metadata: {
         user_id: user.id,
         plan_tier: plan.name,
-        credits: plan.creditAmount,
-        billing_cycle: billingCycle
+        billing_cycle: yearly ? 'yearly' : 'monthly'
       },
       callback: async (response) => {
         const { error } = await supabase.rpc('record_paystack_payment', {
           p_reference: response.reference,
           p_plan_tier: plan.name,
-          p_credits: plan.creditAmount,
-          p_amount_kobo: plan.amount * 100,
-          p_billing_cycle: billingCycle,
+          p_credits: 0, // Credits handled separately
+          p_amount_kobo: amount * 100,
+          p_billing_cycle: yearly ? 'yearly' : 'monthly',
           p_payment_type: 'subscription'
         });
 
@@ -92,7 +233,7 @@ const PricingPage = () => {
 
         await refreshProfile();
         setTier(plan.name);
-        alert(`${plan.name} activated. ${plan.creditAmount.toLocaleString()} credits added to your account.`);
+        alert(`${plan.name} activated.`);
       },
       onClose: () => {
         console.log("Window closed");
@@ -101,151 +242,254 @@ const PricingPage = () => {
     handler.openIframe();
   };
 
-  const handleUpgrade = (tierName) => {
-    setTier(tierName);
+  const handleUpgrade = (plan) => {
+    if (onUpgrade) {
+      onUpgrade(plan.id);
+    } else {
+      payWithPaystack(plan);
+    }
   };
 
   return (
     <>
-    <div className="pt-32 pb-24 bg-white">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-16">
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl font-bold text-text-primary mb-6"
-          >
-            Simple, Transparent <span className="text-primary">Pricing.</span>
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-text-secondary text-lg mb-10"
-          >
-            Choose the level of market intelligence that fits your trading style.
-          </motion.p>
+      <style>{`
+        * { box-sizing: border-box; }
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Geist', 'Inter', system-ui, sans-serif; }
+      `}</style>
+
+      <div className={cn(
+        "min-h-screen transition-colors duration-300",
+        dark ? "bg-[#0a0a0b] text-white" : "bg-[#f0f2f5] text-[#0f172a]"
+      )}>
+
+        {/* Header */}
+        <div className="max-w-[980px] mx-auto px-6 pt-8 pb-12">
+          <div className="flex items-center justify-between mb-12">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-[#2563eb] rounded-lg flex items-center justify-center">
+                <ArrowUpRight className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-xl font-bold">FXUTILITY<span className="text-[#2563eb]">.</span></span>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="px-3 py-1 bg-[#1a1a1c] text-[#888888] text-xs rounded-full border border-[#1e1e22]">
+                INSTITUTIONAL HUB V1.2
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1 bg-[#1a1a1c] text-[#888888] text-xs rounded-full border border-[#1e1e22]">
+                <MapPin className="w-3 h-3" />
+                {curLoading ? '...' : `${cur.country || 'Nigeria'} · ${cur.code}`}
+              </div>
+              <button
+                onClick={() => setDark(!dark)}
+                className="w-8 h-8 rounded-lg border border-[#1e1e22] bg-[#1a1a1c] flex items-center justify-center hover:bg-[#1e1e22] transition-colors"
+              >
+                {dark ? <Sun className="w-4 h-4 text-[#888888]" /> : <Moon className="w-4 h-4 text-[#64748b]" />}
+              </button>
+            </div>
+          </div>
 
           {/* Billing Toggle */}
           <div className="flex items-center justify-center gap-4 mb-12">
-            <span className={cn("text-sm font-semibold", billingCycle === 'monthly' ? "text-text-primary" : "text-text-secondary")}>Monthly</span>
-            <button 
-              onClick={() => setBillingCycle(prev => prev === 'monthly' ? 'yearly' : 'monthly')}
-              className="w-14 h-7 bg-gray-100 rounded-full p-1 relative flex items-center transition-colors hover:bg-gray-200"
-            >
-              <motion.div 
-                animate={{ x: billingCycle === 'monthly' ? 0 : 28 }}
-                className="w-5 h-5 bg-primary rounded-full shadow-md"
-              />
-            </button>
-            <span className={cn("text-sm font-semibold flex items-center gap-2", billingCycle === 'yearly' ? "text-text-primary" : "text-text-secondary")}>
-              Yearly <span className="text-[10px] font-bold bg-green-100 text-green-600 px-2 py-0.5 rounded-full uppercase">Save 20%</span>
-            </span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {plans.map((plan, idx) => (
-            <motion.div 
-              key={plan.name}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
-              className={cn(
-                "bento-card relative flex flex-col p-8",
-                plan.popular ? "border-primary/30 shadow-xl shadow-primary/5 scale-105 z-10" : "border-gray-100"
-              )}
-            >
-              {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] font-bold px-4 py-1.5 rounded-full uppercase tracking-widest">
-                  Most Popular
-                </div>
-              )}
-
-              <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center mb-6", plan.color)}>
-                <plan.icon className="w-6 h-6" />
-              </div>
-
-              <h3 className="text-xl font-bold text-text-primary mb-2">{plan.name}</h3>
-              <p className="text-sm text-text-secondary mb-6 leading-relaxed">{plan.desc}</p>
-
-              <div className="mb-6">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-text-primary">{plan.price}</span>
-                  <span className="text-sm text-text-secondary">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
-                </div>
-                <div className="text-sm font-bold text-primary mt-2 uppercase tracking-tighter">{plan.credits}</div>
-              </div>
-
-              <button 
-                onClick={() => plan.name === 'Basic' ? handleUpgrade(plan.name) : payWithPaystack(plan)}
+            <span className={cn(
+              "text-sm font-semibold transition-colors",
+              !yearly ? (dark ? "text-white" : "text-[#0f172a]") : (dark ? "text-[#888888]" : "text-[#64748b]")
+            )}>Monthly</span>
+            <div className="relative">
+              <button
+                onClick={() => setYearly(!yearly)}
                 className={cn(
-                  "w-full py-4 rounded-full font-bold text-sm transition-all mb-8",
-                  plan.popular ? "bg-primary text-white hover:shadow-lg hover:shadow-primary/30" : "bg-gray-50 text-text-primary hover:bg-gray-100"
+                  "w-14 h-7 rounded-full border transition-colors",
+                  dark ? "bg-[#1a1a1c] border-[#1e1e22]" : "bg-white border-[#e2e8f0]"
                 )}
               >
-                {currentTier === plan.name ? 'Current Plan' : (plan.name === 'Basic' ? 'Get Started' : 'Buy Now')}
+                <motion.div
+                  animate={{ left: yearly ? 23 : 3 }}
+                  transition={{ type: "tween", duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                  className="absolute top-0.5 w-6 h-6 bg-[#2563eb] rounded-full shadow-md"
+                />
               </button>
-
-              <div className="space-y-4">
-                {plan.features.map((feature) => (
-                  <div key={feature} className="flex items-start gap-3">
-                    <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-sm text-text-secondary leading-tight">{feature}</span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Comparison Table */}
-        <div className="mt-32 overflow-x-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-text-primary">Feature Comparison</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "text-sm font-semibold transition-colors",
+                yearly ? (dark ? "text-white" : "text-[#0f172a]") : (dark ? "text-[#888888]" : "text-[#64748b]")
+              )}>Yearly</span>
+              <span className="text-[10px] font-bold bg-[#22c55e] text-white px-2 py-0.5 rounded-full uppercase tracking-widest">
+                Save 20%
+              </span>
+            </div>
           </div>
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-gray-100">
-                <th className="py-6 px-4 text-sm font-bold text-text-secondary uppercase">Features</th>
-                <th className="py-6 px-4 text-sm font-bold text-text-primary uppercase text-center">Basic</th>
-                <th className="py-6 px-4 text-sm font-bold text-primary uppercase text-center">Premium</th>
-                <th className="py-6 px-4 text-sm font-bold text-text-primary uppercase text-center">Pro</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { name: "Risk Architect", basic: true, premium: true, pro: true },
-                { name: "Daily Signals", basic: "3/day", premium: "Unlimited", pro: "Unlimited" },
-                { name: "Volatility Heatmap", basic: false, premium: true, pro: true },
-                { name: "Edge Scanner", basic: false, premium: false, pro: true },
-                { name: "Custom Webhooks", basic: false, premium: false, pro: true },
-                { name: "Zero Latency Feed", basic: false, premium: true, pro: true }
-              ].map((row) => (
-                <tr key={row.name} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                  <td className="py-5 px-4">
-                    <div className="flex items-center gap-2 group cursor-help">
-                      <span className="text-sm font-medium text-text-primary">{row.name}</span>
-                      <HelpCircle className="w-3.5 h-3.5 text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity" />
+
+          {/* Plan Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 align-start">
+            {plans.map((plan, idx) => {
+              const state = getPlanState(plan.id);
+              const inheritedTools = getInheritedTools(plan);
+              const inheritedLabel = getInheritedLabel(plan);
+
+              return (
+                <motion.div
+                  key={plan.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className={cn(
+                    "relative p-6 rounded-xl border transition-all",
+                    dark ? "bg-[#111113] border-[#1c1c20]" : "bg-white border-[#e2e8f0]",
+                    plan.popular && "border-[#2563eb] border-2"
+                  )}
+                >
+                  {plan.popular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#2563eb] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+                      Most Popular
                     </div>
-                  </td>
-                  <td className="py-5 px-4 text-center">
-                    {typeof row.basic === 'boolean' ? (row.basic ? <Check className="w-5 h-5 text-green-500 mx-auto" /> : <span className="text-gray-200">—</span>) : <span className="text-sm text-text-secondary">{row.basic}</span>}
-                  </td>
-                  <td className="py-5 px-4 text-center">
-                    {typeof row.premium === 'boolean' ? (row.premium ? <Check className="w-5 h-5 text-green-500 mx-auto" /> : <span className="text-gray-200">—</span>) : <span className="text-sm text-text-secondary">{row.premium}</span>}
-                  </td>
-                  <td className="py-5 px-4 text-center">
-                    {typeof row.pro === 'boolean' ? (row.pro ? <Check className="w-5 h-5 text-green-500 mx-auto" /> : <span className="text-gray-200">—</span>) : <span className="text-sm text-text-secondary">{row.pro}</span>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  )}
+
+                  <div className={cn(
+                    "w-12 h-12 rounded-xl flex items-center justify-center mb-4",
+                    dark
+                      ? plan.id === 'basic' ? "bg-[#1a2035]" : plan.id === 'premium' ? "bg-[#1e1535]" : "bg-[#251c0a]"
+                      : plan.id === 'basic' ? "bg-[#dbeafe]" : plan.id === 'premium' ? "bg-[#ede9fe]" : "bg-[#fef3c7]"
+                  )}>
+                    <plan.icon className="w-6 h-6 text-[#2563eb]" />
+                  </div>
+
+                  <h3 className="text-lg font-bold mb-2">{plan.name}</h3>
+                  <p className={cn(
+                    "text-sm mb-6 leading-relaxed",
+                    dark ? "text-[#888888]" : "text-[#64748b]"
+                  )}>{plan.tagline}</p>
+
+                  <div className="mb-6">
+                    <div className="flex items-baseline gap-1 mb-1">
+                      <span className="text-3xl font-bold">
+                        {formatPrice(yearly ? plan.yearlyPrice : plan.monthlyPrice)}
+                      </span>
+                      <span className={cn(
+                        "text-sm",
+                        dark ? "text-[#888888]" : "text-[#64748b]"
+                      )}>/{yearly ? 'yr' : 'mo'}</span>
+                    </div>
+                    {yearly && (
+                      <div className={cn(
+                        "text-xs",
+                        dark ? "text-[#3a3a3e]" : "text-[#b0bec5]"
+                      )}>
+                        ≈ {getYearlyEquivalent(plan.monthlyPrice)}/mo billed annually
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => state === 'upgrade' && handleUpgrade(plan)}
+                    className={cn(
+                      "w-full py-3 rounded-lg font-bold text-sm mb-6 transition-all",
+                      state === 'current' && "bg-[#1a1a1c] text-[#888888] cursor-not-allowed",
+                      state === 'owned' && "bg-[#1a1a1c] text-[#888888] cursor-not-allowed",
+                      state === 'upgrade' && idx === 1 && "bg-[#2563eb] text-white hover:opacity-90",
+                      state === 'upgrade' && idx !== 1 && "border border-[#2563eb] text-[#2563eb] bg-transparent hover:bg-[#2563eb] hover:text-white"
+                    )}
+                  >
+                    {state === 'current' && 'Current Plan'}
+                    {state === 'owned' && 'Included in your plan'}
+                    {state === 'upgrade' && `Upgrade to ${plan.name}`}
+                  </button>
+
+                  {/* Inherited Tools */}
+                  {inheritedLabel && inheritedTools.length > 0 && (
+                    <div className="mb-4">
+                      <div className={cn(
+                        "text-xs font-bold uppercase tracking-widest mb-3",
+                        dark ? "text-[#888888]" : "text-[#64748b]"
+                      )}>
+                        {inheritedLabel}
+                      </div>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {inheritedTools.map((tool, toolIdx) => (
+                          <div
+                            key={toolIdx}
+                            className={cn(
+                              "px-2 py-1 rounded-full text-xs border",
+                              state === 'owned'
+                                ? "bg-[#2563eb]/10 text-[#2563eb] border-[#2563eb]/20"
+                                : dark ? "bg-[#1a1a1c] text-[#3a3a3e] border-[#1e1e22]" : "bg-[#f1f5f9] text-[#b0bec5] border-[#e8edf3]"
+                            )}
+                          >
+                            {tool.name}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Own Tools */}
+                  <div className="space-y-3">
+                    {plan.tools.map((tool, toolIdx) => (
+                      <div key={toolIdx} className="flex items-start gap-3">
+                        <div className="w-5 h-5 rounded-full bg-[#2563eb]/10 border border-[#2563eb] flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Check className="w-3 h-3 text-[#2563eb]" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold">{tool.name}</span>
+                            {tool.free && (
+                              <span className="text-xs font-bold bg-[#22c55e] text-white px-1.5 py-0.5 rounded uppercase tracking-widest">
+                                Free
+                              </span>
+                            )}
+                            {tool.ai && (
+                              <span className="text-xs font-bold bg-[#2563eb] text-white px-1.5 py-0.5 rounded uppercase tracking-widest">
+                                AI
+                              </span>
+                            )}
+                          </div>
+                          <div className={cn(
+                            "text-xs mt-1",
+                            dark ? "text-[#3a3a3e]" : "text-[#b0bec5]"
+                          )}>
+                            {tool.desc}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* AI Credits Footer */}
+          <div className={cn(
+            "mt-12 p-6 rounded-xl border",
+            dark ? "bg-[#111113] border-[#1c1c20]" : "bg-white border-[#e2e8f0]"
+          )}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-[#2563eb]/10 rounded-lg flex items-center justify-center">
+                  <Zap className="w-4 h-4 text-[#2563eb]" />
+                </div>
+                <div>
+                  <div className="font-bold text-sm mb-1">AI-powered tools use credits</div>
+                  <div className={cn(
+                    "text-xs",
+                    dark ? "text-[#888888]" : "text-[#64748b]"
+                  )}>
+                    Your plan unlocks tool access. AI Signal Engine (Premium+) and Edge Scanner Pro (Pro) consume credits per use — top up any time. No wasted monthly allocations.
+                  </div>
+                </div>
+              </div>
+              <button className="text-[#2563eb] hover:underline text-sm font-bold">
+                Top up credits →
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-    <Footer />
+
+      <Footer />
     </>
   );
 };

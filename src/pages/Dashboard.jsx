@@ -59,6 +59,30 @@ const Dashboard = () => {
   const [transactions, setTransactions] = useState([]);
   const creditPriceNgn = 30;
 
+  const loadPaystackScript = () => {
+    const scriptUrl = 'https://js.paystack.co/v1/inline.js';
+    return new Promise((resolve, reject) => {
+      if (window.PaystackPop) {
+        resolve();
+        return;
+      }
+
+      const existingScript = document.querySelector(`script[src="${scriptUrl}"]`);
+      if (existingScript) {
+        existingScript.addEventListener('load', resolve);
+        existingScript.addEventListener('error', () => reject(new Error('Failed to load Paystack script.')));
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = scriptUrl;
+      script.async = true;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error('Failed to load Paystack script.'));
+      document.head.appendChild(script);
+    });
+  };
+
   // Fetch Transactions
   useEffect(() => {
     if (!user) return;
@@ -186,13 +210,9 @@ const Dashboard = () => {
     navigate(paths[name] || '/dashboard');
   };
 
-  const payTopUpWithPaystack = () => {
+  const payTopUpWithPaystack = async () => {
     if (!user) {
       alert('Please sign in to top up credits.');
-      return;
-    }
-    if (!window.PaystackPop) {
-      alert('Paystack could not load. Please refresh and try again.');
       return;
     }
     if (!import.meta.env.VITE_PAYSTACK_PUBLIC_KEY) {
@@ -201,6 +221,19 @@ const Dashboard = () => {
     }
     if (!Number.isInteger(topUpAmount) || topUpAmount < 50) {
       alert('Minimum top up is 50 credits.');
+      return;
+    }
+
+    try {
+      await loadPaystackScript();
+    } catch (error) {
+      console.error(error);
+      alert('Paystack could not load. Please refresh and try again.');
+      return;
+    }
+
+    if (!window.PaystackPop) {
+      alert('Paystack could not load. Please refresh and try again.');
       return;
     }
 
@@ -830,10 +863,11 @@ const Dashboard = () => {
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button onClick={() => setShowTopUpModal(false)} className="flex-1 px-6 py-3 bg-gray-100 text-text-primary rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors">
+                <button type="button" onClick={() => setShowTopUpModal(false)} className="flex-1 px-6 py-3 bg-gray-100 text-text-primary rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors">
                   Cancel
                 </button>
                 <button
+                  type="button"
                   onClick={payTopUpWithPaystack}
                   className="flex-1 px-6 py-3 bg-primary text-white text-center rounded-xl font-bold text-sm hover:opacity-90 transition-opacity block"
                 >
