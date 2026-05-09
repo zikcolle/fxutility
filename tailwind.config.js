@@ -8,44 +8,51 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: {
-          DEFAULT: '#ffffff',
-          dark: '#0a0a0b'
-        },
-        primary: '#007aff',
-        accent: {
-          lavender: '#E9E7FD',
-          mint: '#E2F9F0',
-          blue: '#E0F2FE',
-        },
-        text: {
-          primary: {
-            DEFAULT: '#1d1d1f',
-            dark: '#ffffff'
-          },
-          secondary: {
-            DEFAULT: '#86868b',
-            dark: '#888888'
-          }
-        },
+        background: '#ffffff',
+        foreground: '#0f172a',
         card: {
-          DEFAULT: '#ffffff',
-          dark: '#111113'
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))'
         },
-        border: {
-          DEFAULT: '#e2e8f0',
-          dark: '#1c1c20'
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))'
+        },
+        primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))'
+        },
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))'
         },
         muted: {
-          DEFAULT: '#f0f2f5',
-          dark: '#1a1a1c'
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))'
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))'
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))'
+        },
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        chart: {
+          '1': 'hsl(var(--chart-1))',
+          '2': 'hsl(var(--chart-2))',
+          '3': 'hsl(var(--chart-3))',
+          '4': 'hsl(var(--chart-4))',
+          '5': 'hsl(var(--chart-5))'
         }
       },
       borderRadius: {
-        'bento': '24px',
-      },
-      fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)'
       }
     },
   },

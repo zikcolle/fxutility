@@ -189,65 +189,60 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
       alert("Please sign in to upgrade.");
       return;
     }
-    if (!import.meta.env.VITE_PAYSTACK_PUBLIC_KEY) {
-      alert("Paystack public key is missing. Add VITE_PAYSTACK_PUBLIC_KEY to your environment variables.");
-      return;
-    }
-
-    try {
-      await loadPaystackScript();
-    } catch (error) {
-      console.error(error);
-      alert("Paystack could not load. Please refresh and try again.");
-      return;
-    }
-
-    if (!window.PaystackPop) {
-      alert("Paystack could not load. Please refresh and try again.");
-      return;
-    }
-
+  
     const amount = yearly ? plan.yearlyPrice : plan.monthlyPrice;
-    const handler = window.PaystackPop.setup({
-      key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
-      email: user.email,
-      amount: amount * 100, // Kobo
-      currency: "NGN",
-      metadata: {
-        user_id: user.id,
-        plan_tier: plan.name,
-        billing_cycle: yearly ? 'yearly' : 'monthly'
-      },
-      callback: async (response) => {
-        const { error } = await supabase.rpc('record_paystack_payment', {
-          p_reference: response.reference,
-          p_plan_tier: plan.name,
-          p_credits: 0, // Credits handled separately
-          p_amount_kobo: amount * 100,
-          p_billing_cycle: yearly ? 'yearly' : 'monthly',
-          p_payment_type: 'subscription'
-        });
 
+const handler = window.PaystackPop.setup({
+  key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
+  email: user.email,
+  amount: amount * 100,
+  currency: "NGN",
+  metadata: {
+    user_id: user.id,
+    plan_tier: plan.name,
+    billing_cycle: yearly ? 'yearly' : 'monthly',
+  },
+
+  callback: function (response) {
+    supabase
+      .rpc('record_paystack_payment', {
+        p_reference: response.reference,
+        p_plan_tier: plan.name,
+        p_credits: 0,
+        p_amount_kobo: amount * 100,
+        p_billing_cycle: yearly ? 'yearly' : 'monthly',
+        p_payment_type: 'subscription',
+      })
+      .then(async ({ error }) => {
         if (error) {
           console.error('Payment recording failed:', error);
-          alert("Payment succeeded, but we could not update your account automatically. Please contact support with reference: " + response.reference);
+          alert(
+            "Payment succeeded, but we could not update your account automatically. Please contact support with reference: " +
+              response.reference
+          );
           return;
         }
 
         await refreshProfile();
         setTier(plan.name);
         alert(`${plan.name} activated.`);
-      },
-      onClose: () => {
-        console.log("Window closed");
-      }
-    });
-    handler.openIframe();
-  };
+      })
+      .catch((e) => {
+        console.error(e);
+        alert("Something went wrong after payment. Please contact support.");
+      });
+  },
 
-  const handleTopUpCredits = () => {
-    navigate('/dashboard?topup=true');
-  };
+  onClose: function () {
+    console.log("Window closed");
+  },
+});
+
+handler.openIframe();
+};
+  function handleTopUpCredits() {
+      navigate('/dashboard?topup=true');
+    }
 
   return (
     <>
@@ -259,7 +254,7 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
 
       <div className={cn(
         "min-h-screen transition-colors duration-300 pt-20",
-        isDark ? "bg-background-dark text-text-primary-dark" : "bg-background text-text-primary"
+        isDark ? "bg-[#0a0a0b] text-white" : "bg-[#f0f2f5] text-[#0f172a]"
       )}>
 
         {/* Header */}
@@ -273,18 +268,18 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="px-3 py-1 bg-muted text-text-secondary text-xs rounded-full border border-border">
+              <div className="px-3 py-1 bg-[#1a1a1c] text-[#888888] text-xs rounded-full border border-[#1e1e22]">
                 INSTITUTIONAL HUB V1.2
               </div>
-              <div className="flex items-center gap-2 px-3 py-1 bg-muted text-text-secondary text-xs rounded-full border border-border">
+              <div className="flex items-center gap-2 px-3 py-1 bg-[#1a1a1c] text-[#888888] text-xs rounded-full border border-[#1e1e22]">
                 <MapPin className="w-3 h-3" />
                 {curLoading ? '...' : `${cur.country || 'Nigeria'} · ${cur.code}`}
               </div>
               <button
                 onClick={toggleTheme}
-                className="w-8 h-8 rounded-lg border border-border bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+                className="w-8 h-8 rounded-lg border border-[#1e1e22] bg-[#1a1a1c] flex items-center justify-center hover:bg-[#1e1e22] transition-colors"
               >
-                {isDark ? <Sun className="w-4 h-4 text-text-secondary" /> : <Moon className="w-4 h-4 text-text-secondary" />}
+                {isDark ? <Sun className="w-4 h-4 text-[#888888]" /> : <Moon className="w-4 h-4 text-[#64748b]" />}
               </button>
             </div>
           </div>
@@ -293,14 +288,14 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
           <div className="flex items-center justify-center gap-4 mb-12">
             <span className={cn(
               "text-sm font-semibold transition-colors",
-              !yearly ? "text-text-primary" : "text-text-secondary"
+              !yearly ? (isDark ? "text-white" : "text-[#0f172a]") : (isDark ? "text-[#888888]" : "text-[#64748b]")
             )}>Monthly</span>
             <div className="relative">
               <button
                 onClick={() => setYearly(!yearly)}
                 className={cn(
                   "w-14 h-7 rounded-full border transition-colors",
-                  "bg-muted border-border"
+                  isDark ? "bg-[#1a1a1c] border-[#1e1e22]" : "bg-white border-[#e2e8f0]"
                 )}
               >
                 <motion.div
@@ -313,7 +308,7 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
             <div className="flex items-center gap-2">
               <span className={cn(
                 "text-sm font-semibold transition-colors",
-                yearly ? "text-text-primary" : "text-text-secondary"
+                yearly ? (isDark ? "text-white" : "text-[#0f172a]") : (isDark ? "text-[#888888]" : "text-[#64748b]")
               )}>Yearly</span>
               <span className="text-[10px] font-bold bg-[#22c55e] text-white px-2 py-0.5 rounded-full uppercase tracking-widest">
                 Save 20%
@@ -336,8 +331,8 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
                   transition={{ delay: idx * 0.1 }}
                   className={cn(
                     "relative p-6 rounded-xl border transition-all",
-                    "bg-card border-border",
-                    plan.popular && "border-primary border-2"
+                    isDark ? "bg-[#111113] border-[#1c1c20]" : "bg-white border-[#e2e8f0]",
+                    plan.popular && "border-[#2563eb] border-2"
                   )}
                 >
                   {plan.popular && (
@@ -383,7 +378,7 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
 
                   <button
                     type="button"
-                    onClick={() => state === 'upgrade' && handleUpgrade(plan)}
+                    onClick={() => state === 'upgrade' && payWithPaystack(plan)}
                     className={cn(
                       "w-full py-3 rounded-lg font-bold text-sm mb-6 transition-all",
                       state === 'current' && "bg-[#1a1a1c] text-[#888888] cursor-not-allowed",
@@ -414,7 +409,7 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
                               "px-2 py-1 rounded-full text-xs border",
                               state === 'owned'
                                 ? "bg-[#2563eb]/10 text-[#2563eb] border-[#2563eb]/20"
-                                : dark ? "bg-[#1a1a1c] text-[#3a3a3e] border-[#1e1e22]" : "bg-[#f1f5f9] text-[#b0bec5] border-[#e8edf3]"
+                                : isDark ? "bg-[#1a1a1c] text-[#3a3a3e] border-[#1e1e22]" : "bg-[#f1f5f9] text-[#b0bec5] border-[#e8edf3]"
                             )}
                           >
                             {tool.name}
