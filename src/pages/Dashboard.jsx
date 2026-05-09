@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   ShieldCheck, 
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useCredit } from '../context/CreditContext';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../context/AuthContext';
 import { Routes, Route, Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import LotSizeCalculator from '../components/tools/LotSizeCalculator';
@@ -42,7 +43,7 @@ const NAV_ITEMS = [
 ];
 
 const Dashboard = () => {
-  const { credits, tier } = useCredit();
+  const { credits, tier, refreshProfile } = useCredit();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -56,6 +57,7 @@ const Dashboard = () => {
   const [isAutoRenew, setIsAutoRenew] = useState(false);
 
   const [transactions, setTransactions] = useState([]);
+  const creditPriceNgn = 30;
 
   // Fetch Transactions
   useEffect(() => {
@@ -79,11 +81,12 @@ const Dashboard = () => {
         let combined = [];
         if (creditData) {
           combined = [...combined, ...creditData.map(tx => ({
-            type: tx.tool_id === 'topup' ? 'Credit Top-Up' : 'Tool Usage',
-            amount: tx.tool_id === 'topup' ? `+${tx.amount} Credits` : `-${tx.amount} Credits`,
+            type: tx.tool_id === 'topup' ? 'Credit Top-Up' : tx.tool_id === 'subscription' ? 'Plan Payment' : 'Tool Usage',
+            amount: tx.tool_id === 'topup' || tx.tool_id === 'subscription' ? `+${tx.amount.toLocaleString()} Credits` : `-${tx.amount} Credits`,
             date: new Date(tx.created_at).toLocaleDateString(),
+            sortDate: tx.created_at,
             status: 'Completed',
-            color: tx.tool_id === 'topup' ? 'text-green-600' : 'text-text-primary'
+            color: tx.tool_id === 'topup' || tx.tool_id === 'subscription' ? 'text-green-600' : 'text-text-primary'
           }))];
         }
         if (payoutData) {
@@ -91,20 +94,21 @@ const Dashboard = () => {
             type: 'Affiliate Payout',
             amount: `$${tx.amount.toFixed(2)}`,
             date: new Date(tx.created_at).toLocaleDateString(),
+            sortDate: tx.created_at,
             status: tx.status,
             color: 'text-amber-600'
           }))];
         }
         
         // Sort combined descending by date
-        combined.sort((a, b) => new Date(b.date) - new Date(a.date));
+        combined.sort((a, b) => new Date(b.sortDate) - new Date(a.sortDate));
         setTransactions(combined.slice(0, 5));
       } catch (err) {
         console.error(err);
       }
     };
     fetchTransactions();
-  }, [user]);
+  }, [user, credits]);
 
   // Live Clock
   useEffect(() => {
@@ -180,6 +184,63 @@ const Dashboard = () => {
       'Settings': '/dashboard/settings'
     };
     navigate(paths[name] || '/dashboard');
+  };
+
+  const payTopUpWithPaystack = () => {
+    if (!user) {
+      alert('Please sign in to top up credits.');
+      return;
+    }
+    if (!window.PaystackPop) {
+      alert('Paystack could not load. Please refresh and try again.');
+      return;
+    }
+    if (!import.meta.env.VITE_PAYSTACK_PUBLIC_KEY) {
+      alert('Paystack public key is missing. Add VITE_PAYSTACK_PUBLIC_KEY to your environment variables.');
+      return;
+    }
+    if (!Number.isInteger(topUpAmount) || topUpAmount < 50) {
+      alert('Minimum top up is 50 credits.');
+      return;
+    }
+
+    const amountKobo = Math.round(topUpAmount * creditPriceNgn * 100);
+    const handler = window.PaystackPop.setup({
+      key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
+      email: user.email,
+      amount: amountKobo,
+      currency: 'NGN',
+      metadata: {
+        user_id: user.id,
+        credits: topUpAmount,
+        payment_type: 'topup',
+        auto_renew: isAutoRenew
+      },
+      callback: async (response) => {
+        const { error } = await supabase.rpc('record_paystack_payment', {
+          p_reference: response.reference,
+          p_plan_tier: null,
+          p_credits: topUpAmount,
+          p_amount_kobo: amountKobo,
+          p_billing_cycle: null,
+          p_payment_type: 'topup'
+        });
+
+        if (error) {
+          console.error('Top-up recording failed:', error);
+          alert('Payment succeeded, but we could not add credits automatically. Please contact support with reference: ' + response.reference);
+          return;
+        }
+
+        await refreshProfile();
+        setShowTopUpModal(false);
+        alert(`${topUpAmount.toLocaleString()} credits added to your account.`);
+      },
+      onClose: () => {
+        console.log('Paystack top-up window closed');
+      }
+    });
+    handler.openIframe();
   };
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Trader';
@@ -398,6 +459,36 @@ const Dashboard = () => {
                   );
                 })}
               </div>
+
+              <section className="bento-card p-6 bg-white">
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider">Recent Transactions</h2>
+                  <button
+                    onClick={() => handleTabChange('Settings')}
+                    className="text-xs font-bold text-primary hover:opacity-80 transition-opacity"
+                  >
+                    View All
+                  </button>
+                </div>
+                <div className="space-y-0">
+                  {transactions.length === 0 ? (
+                    <div className="py-6 text-center text-xs text-text-secondary">No recent transactions yet.</div>
+                  ) : (
+                    transactions.slice(0, 3).map((tx, idx) => (
+                      <div key={`${tx.type}-${idx}`} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
+                        <div>
+                          <div className="font-bold text-sm text-text-primary">{tx.type}</div>
+                          <div className="text-[10px] font-bold text-text-secondary uppercase">{tx.date}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className={cn("font-bold text-sm", tx.color)}>{tx.amount}</div>
+                          <div className="text-[10px] font-bold text-text-secondary uppercase">{tx.status}</div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </section>
             </div>
           } />
 
@@ -726,9 +817,9 @@ const Dashboard = () => {
               <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-center justify-between">
                 <div>
                   <div className="text-sm font-bold text-blue-900">Total Price</div>
-                  <div className="text-xs text-blue-700">1 Credit = $0.02</div>
+                  <div className="text-xs text-blue-700">1 Credit = NGN {creditPriceNgn}</div>
                 </div>
-                <div className="text-xl font-black text-blue-900">${(topUpAmount * 0.02).toFixed(2)}</div>
+                <div className="text-xl font-black text-blue-900">NGN {(topUpAmount * creditPriceNgn).toLocaleString()}</div>
               </div>
 
               <div className="flex items-center justify-between mt-4">
@@ -742,13 +833,12 @@ const Dashboard = () => {
                 <button onClick={() => setShowTopUpModal(false)} className="flex-1 px-6 py-3 bg-gray-100 text-text-primary rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors">
                   Cancel
                 </button>
-                <a 
-                  href={`mailto:isaacbrainer4@gmail.com?subject=Credit Top Up Request: ${topUpAmount} Credits&body=Hello,%0D%0A%0D%0AI would like to purchase ${topUpAmount} credits for $${(topUpAmount * 0.02).toFixed(2)}. Please send me the payment instructions.%0D%0A%0D%0AAuto-renew: ${isAutoRenew ? 'Yes' : 'No'}`}
-                  onClick={() => setShowTopUpModal(false)}
+                <button
+                  onClick={payTopUpWithPaystack}
                   className="flex-1 px-6 py-3 bg-primary text-white text-center rounded-xl font-bold text-sm hover:opacity-90 transition-opacity block"
                 >
-                  Pay via Email
-                </a>
+                  Pay with Paystack
+                </button>
               </div>
             </div>
           </div>

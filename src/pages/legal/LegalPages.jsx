@@ -1,5 +1,4 @@
-import React from 'react';
-import { Shield, Lock, FileText, Scale, AlertTriangle, Cookie } from 'lucide-react';
+import { Shield, Scale, AlertTriangle, Cookie } from 'lucide-react';
 import Footer from '../../components/Footer';
 
 const LegalLayout = ({ title, icon: Icon, children }) => (
@@ -29,7 +28,7 @@ export const PrivacyPolicy = () => (
       <p className="mb-4 text-sm leading-relaxed">At FXUTILITY, we prioritize the protection of your digital footprint. We collect personal data that you voluntarily provide to us when you register on the Platform, express an interest in obtaining information about us or our products and services, or otherwise when you contact us.</p>
       <ul className="list-disc pl-6 space-y-3 text-sm">
         <li><strong>Personal Information:</strong> Names, email addresses, usernames, and encrypted passwords.</li>
-        <li><strong>Financial Information:</strong> Payment processing is handled by third-party providers (Stripe/PayPal). We do not store your full credit card details on our servers.</li>
+        <li><strong>Financial Information:</strong> Payment processing is handled by Paystack. We do not store your full credit card details on our servers.</li>
         <li><strong>Log Data & Usage Information:</strong> IP addresses, browser type, device information, and timestamps of your tool usage for security, credit validation, and service optimization.</li>
       </ul>
     </section>

@@ -19,7 +19,13 @@ FXUTILITY is a credit-based SaaS platform that gives retail forex traders access
 | AI Signal Engine | Premium | 10 |
 | Edge Scanner Pro | Pro | 15 |
 
-New users receive **50 free credits** on signup.
+New users receive **50 free credits** on signup. Paid tiers grant a more useful monthly working balance:
+
+| Plan | Included Credits |
+|------|------------------|
+| Basic | 50 credits/mo |
+| Premium | 1,500 credits/mo |
+| Pro | 50,000 credits/mo |
 
 ---
 
@@ -66,9 +72,10 @@ Create a `.env` file at the project root with:
 ```env
 VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key-here
+VITE_PAYSTACK_PUBLIC_KEY=pk_test_or_live_key
 ```
 
-Both values are found in your Supabase project under **Settings → API**.
+Supabase values are found in your Supabase project under **Settings → API**. The Paystack public key is found in your Paystack dashboard under **Settings -> API Keys & Webhooks**.
 
 ---
 
@@ -76,7 +83,7 @@ Both values are found in your Supabase project under **Settings → API**.
 
 Run `supabase_production_schema.sql` in the Supabase Dashboard SQL Editor to create:
 - `profiles` — user accounts with credit balance and tier
-- `credit_transactions` — full audit trail of every credit deduction
+- `credit_transactions` — full audit trail of credit deductions, top-ups, and plan payments
 - `tool_usage` — analytics table for tool engagement tracking
 
 ### Granting Admin Access
@@ -125,4 +132,4 @@ src/
 
 ## 📄 License
 
-MIT — built by [Isaac Ogunwale](https://github.com/your-username)
+MIT — built by [Isaac Ogunwale](https://github.com/zikcolle)

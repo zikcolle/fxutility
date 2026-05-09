@@ -1,21 +1,23 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Check, Zap, Shield, Crown, HelpCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCredit } from '../context/CreditContext';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../context/AuthContext';
 import { cn } from '../lib/utils';
 import Footer from '../components/Footer';
 
 const PricingPage = () => {
   const [billingCycle, setBillingCycle] = useState('monthly');
-  const { tier: currentTier, setTier } = useCredit();
+  const { tier: currentTier, setTier, refreshProfile } = useCredit();
   const { user } = useAuth();
 
   const plans = [
     {
       name: "Basic",
-      price: billingCycle === 'monthly' ? "$0" : "$0",
+      price: billingCycle === 'monthly' ? "NGN 0" : "NGN 0",
       credits: "50 Credits/mo",
+      creditAmount: 50,
       desc: "Perfect for beginners and casual traders.",
       icon: Shield,
       color: "bg-blue-50 text-blue-600",
@@ -24,8 +26,9 @@ const PricingPage = () => {
     },
     {
       name: "Premium",
-      price: billingCycle === 'monthly' ? "$19" : "$190",
-      credits: "500 Credits/mo",
+      price: billingCycle === 'monthly' ? "NGN 10k" : "NGN 100k",
+      credits: "1,500 Credits/mo",
+      creditAmount: billingCycle === 'monthly' ? 1500 : 18000,
       desc: "For serious traders needing more precision.",
       icon: Zap,
       color: "bg-purple-50 text-purple-600",
@@ -35,8 +38,9 @@ const PricingPage = () => {
     },
     {
       name: "Pro",
-      price: billingCycle === 'monthly' ? "$49" : "$490",
-      credits: "Unlimited Credits",
+      price: billingCycle === 'monthly' ? "NGN 25k" : "NGN 250k",
+      credits: "50,000 Credits/mo",
+      creditAmount: billingCycle === 'monthly' ? 50000 : 600000,
       desc: "Unlimited power for high-frequency pros.",
       icon: Crown,
       color: "bg-orange-50 text-orange-600",
@@ -50,14 +54,45 @@ const PricingPage = () => {
       alert("Please sign in to upgrade.");
       return;
     }
+    if (!window.PaystackPop) {
+      alert("Paystack could not load. Please refresh and try again.");
+      return;
+    }
+    if (!import.meta.env.VITE_PAYSTACK_PUBLIC_KEY) {
+      alert("Paystack public key is missing. Add VITE_PAYSTACK_PUBLIC_KEY to your environment variables.");
+      return;
+    }
 
     const handler = window.PaystackPop.setup({
       key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
       email: user.email,
       amount: plan.amount * 100, // Kobo
       currency: "NGN",
-      callback: (response) => {
-        handleUpgrade(plan.name);
+      metadata: {
+        user_id: user.id,
+        plan_tier: plan.name,
+        credits: plan.creditAmount,
+        billing_cycle: billingCycle
+      },
+      callback: async (response) => {
+        const { error } = await supabase.rpc('record_paystack_payment', {
+          p_reference: response.reference,
+          p_plan_tier: plan.name,
+          p_credits: plan.creditAmount,
+          p_amount_kobo: plan.amount * 100,
+          p_billing_cycle: billingCycle,
+          p_payment_type: 'subscription'
+        });
+
+        if (error) {
+          console.error('Payment recording failed:', error);
+          alert("Payment succeeded, but we could not update your account automatically. Please contact support with reference: " + response.reference);
+          return;
+        }
+
+        await refreshProfile();
+        setTier(plan.name);
+        alert(`${plan.name} activated. ${plan.creditAmount.toLocaleString()} credits added to your account.`);
       },
       onClose: () => {
         console.log("Window closed");

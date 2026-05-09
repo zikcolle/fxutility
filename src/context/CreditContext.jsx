@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useCallback, useContext, useState, useEffect } from 'react';
 import { supabase } from './AuthContext';
 import { useAuth } from './AuthContext';
 
@@ -9,17 +9,9 @@ export const CreditProvider = ({ children }) => {
   const [credits, setCredits] = useState(50);
   const [tier, setTier] = useState('Basic');
 
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-    } else {
-      const saved = localStorage.getItem('fx_credits');
-      setCredits(saved !== null ? parseInt(saved) : 50);
-      setTier('Basic');
-    }
-  }, [user]);
+  const fetchProfile = useCallback(async () => {
+    if (!user) return;
 
-  const fetchProfile = async () => {
     try {
       // Admin Override
       const adminEmails = ['isaacbrainer4@gmail.com'];
@@ -59,7 +51,17 @@ export const CreditProvider = ({ children }) => {
     } catch (err) {
       console.error("Profile fetch failed:", err);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+    } else {
+      const saved = localStorage.getItem('fx_credits');
+      setCredits(saved !== null ? parseInt(saved) : 50);
+      setTier('Basic');
+    }
+  }, [user, fetchProfile]);
 
   const useCredits = async (amount, toolId = 'unknown') => {
     if (user) {
@@ -87,7 +89,7 @@ export const CreditProvider = ({ children }) => {
   };
 
   return (
-    <CreditContext.Provider value={{ credits, tier, setTier, useCredits, addCredits }}>
+    <CreditContext.Provider value={{ credits, tier, setTier, useCredits, addCredits, refreshProfile: fetchProfile }}>
       {children}
     </CreditContext.Provider>
   );

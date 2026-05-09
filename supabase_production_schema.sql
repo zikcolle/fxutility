@@ -73,8 +73,21 @@ CREATE TABLE IF NOT EXISTS public.credit_transactions (
   tool_id TEXT NOT NULL,
   amount INTEGER NOT NULL,
   balance_after INTEGER NOT NULL,
+  payment_provider TEXT,
+  payment_reference TEXT,
+  payment_amount_kobo INTEGER,
+  description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+ALTER TABLE public.credit_transactions ADD COLUMN IF NOT EXISTS payment_provider TEXT;
+ALTER TABLE public.credit_transactions ADD COLUMN IF NOT EXISTS payment_reference TEXT;
+ALTER TABLE public.credit_transactions ADD COLUMN IF NOT EXISTS payment_amount_kobo INTEGER;
+ALTER TABLE public.credit_transactions ADD COLUMN IF NOT EXISTS description TEXT;
+
+CREATE UNIQUE INDEX IF NOT EXISTS credit_transactions_payment_reference_idx
+  ON public.credit_transactions(payment_reference)
+  WHERE payment_reference IS NOT NULL;
 
 ALTER TABLE public.credit_transactions ENABLE ROW LEVEL SECURITY;
 
@@ -182,6 +195,7 @@ CREATE TABLE IF NOT EXISTS public.referrals (
 
 ALTER TABLE public.referrals ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Referrers can view own referrals." ON public.referrals;
 CREATE POLICY "Referrers can view own referrals." ON public.referrals
   FOR SELECT USING (auth.uid() = referrer_id);
 
@@ -203,8 +217,143 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
 
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own subscriptions." ON public.subscriptions;
 CREATE POLICY "Users can view own subscriptions." ON public.subscriptions
   FOR SELECT USING (auth.uid() = user_id);
+
+-- Record a completed Paystack callback and update the user's credits/tier.
+-- For stronger production verification, pair this with a server-side Paystack
+-- transaction verification endpoint before calling this function.
+CREATE OR REPLACE FUNCTION public.record_paystack_payment(
+  p_reference TEXT,
+  p_plan_tier TEXT DEFAULT NULL,
+  p_credits INTEGER DEFAULT 0,
+  p_amount_kobo INTEGER DEFAULT 0,
+  p_billing_cycle TEXT DEFAULT NULL,
+  p_payment_type TEXT DEFAULT 'subscription'
+)
+RETURNS JSONB AS $$
+DECLARE
+  current_credits INTEGER;
+  new_credits INTEGER;
+  period_end TIMESTAMP WITH TIME ZONE;
+  transaction_id UUID;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF p_reference IS NULL OR length(trim(p_reference)) = 0 THEN
+    RAISE EXCEPTION 'Payment reference is required';
+  END IF;
+
+  IF p_credits <= 0 THEN
+    RAISE EXCEPTION 'Credits must be greater than zero';
+  END IF;
+
+  IF p_payment_type NOT IN ('subscription', 'topup') THEN
+    RAISE EXCEPTION 'Unsupported payment type: %', p_payment_type;
+  END IF;
+
+  IF p_payment_type = 'subscription'
+    AND (p_plan_tier IS NULL OR p_plan_tier NOT IN ('Premium', 'Pro', 'Lifetime')) THEN
+    RAISE EXCEPTION 'A valid paid plan tier is required';
+  END IF;
+
+  SELECT id INTO transaction_id
+  FROM public.credit_transactions
+  WHERE payment_reference = p_reference;
+
+  IF transaction_id IS NOT NULL THEN
+    SELECT credits INTO current_credits
+    FROM public.profiles
+    WHERE id = auth.uid();
+
+    RETURN jsonb_build_object(
+      'status', 'duplicate',
+      'credits', current_credits,
+      'transaction_id', transaction_id
+    );
+  END IF;
+
+  SELECT credits INTO current_credits
+  FROM public.profiles
+  WHERE id = auth.uid()
+  FOR UPDATE;
+
+  IF current_credits IS NULL THEN
+    RAISE EXCEPTION 'Profile not found';
+  END IF;
+
+  new_credits := current_credits + p_credits;
+
+  UPDATE public.profiles
+  SET
+    credits = new_credits,
+    tier = CASE WHEN p_payment_type = 'subscription' THEN p_plan_tier ELSE tier END,
+    updated_at = NOW()
+  WHERE id = auth.uid();
+
+  INSERT INTO public.credit_transactions (
+    user_id,
+    tool_id,
+    amount,
+    balance_after,
+    payment_provider,
+    payment_reference,
+    payment_amount_kobo,
+    description
+  )
+  VALUES (
+    auth.uid(),
+    CASE WHEN p_payment_type = 'topup' THEN 'topup' ELSE 'subscription' END,
+    p_credits,
+    new_credits,
+    'paystack',
+    p_reference,
+    p_amount_kobo,
+    CASE
+      WHEN p_payment_type = 'topup' THEN 'Credit top-up'
+      ELSE p_plan_tier || ' plan - ' || COALESCE(p_billing_cycle, 'monthly')
+    END
+  )
+  RETURNING id INTO transaction_id;
+
+  IF p_payment_type = 'subscription' THEN
+    period_end := CASE
+      WHEN p_billing_cycle = 'yearly' THEN NOW() + INTERVAL '1 year'
+      ELSE NOW() + INTERVAL '1 month'
+    END;
+
+    INSERT INTO public.subscriptions (
+      user_id,
+      plan_tier,
+      status,
+      auto_renew,
+      current_period_start,
+      current_period_end
+    )
+    VALUES (
+      auth.uid(),
+      p_plan_tier,
+      'Active',
+      true,
+      NOW(),
+      period_end
+    );
+  END IF;
+
+  RETURN jsonb_build_object(
+    'status', 'recorded',
+    'credits', new_credits,
+    'transaction_id', transaction_id
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+REVOKE EXECUTE ON FUNCTION public.record_paystack_payment(TEXT, TEXT, INTEGER, INTEGER, TEXT, TEXT) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.record_paystack_payment(TEXT, TEXT, INTEGER, INTEGER, TEXT, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.record_paystack_payment(TEXT, TEXT, INTEGER, INTEGER, TEXT, TEXT) TO authenticated;
 
 -- 10. Affiliate Payout Requests Table
 CREATE TABLE IF NOT EXISTS public.affiliate_payouts (
@@ -219,5 +368,6 @@ CREATE TABLE IF NOT EXISTS public.affiliate_payouts (
 
 ALTER TABLE public.affiliate_payouts ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own payouts." ON public.affiliate_payouts;
 CREATE POLICY "Users can view own payouts." ON public.affiliate_payouts
   FOR SELECT USING (auth.uid() = user_id);
