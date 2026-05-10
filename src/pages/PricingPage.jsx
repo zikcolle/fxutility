@@ -280,33 +280,8 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
         "min-h-screen transition-colors duration-300 pt-20",
         isDark ? "bg-[#0a0a0b] text-white" : "bg-[#f0f2f5] text-[#0f172a]"
       )}>
-
-        {/* Header */}
+        {/* Pricing section starts here - Navbar is rendered in App.jsx */}
         <div className="max-w-[980px] mx-auto px-6 pt-8 pb-12">
-          <div className="flex items-center justify-between mb-12">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-[#2563eb] rounded-lg flex items-center justify-center">
-                <ArrowUpRight className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-xl font-bold">FXUTILITY<span className="text-[#2563eb]">.</span></span>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="px-3 py-1 bg-[#1a1a1c] text-[#888888] text-xs rounded-full border border-[#1e1e22]">
-                INSTITUTIONAL HUB V1.2
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1 bg-[#1a1a1c] text-[#888888] text-xs rounded-full border border-[#1e1e22]">
-                <MapPin className="w-3 h-3" />
-                {curLoading ? '...' : `${cur.country || 'Nigeria'} · ${cur.code}`}
-              </div>
-              <button
-                onClick={toggleTheme}
-                className="w-8 h-8 rounded-lg border border-[#1e1e22] bg-[#1a1a1c] flex items-center justify-center hover:bg-[#1e1e22] transition-colors"
-              >
-                {isDark ? <Sun className="w-4 h-4 text-[#888888]" /> : <Moon className="w-4 h-4 text-[#64748b]" />}
-              </button>
-            </div>
-          </div>
 
           {/* Billing Toggle */}
           <div className="flex items-center justify-center gap-4 mb-12">
@@ -325,7 +300,7 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
                 <motion.div
                   animate={{ left: yearly ? 23 : 3 }}
                   transition={{ type: "tween", duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                  className="absolute top-0.5 w-6 h-6 bg-[#2563eb] rounded-full shadow-md"
+                  className="absolute top-0.5 w-6 h-6 bg-primary rounded-full shadow-md"
                 />
               </button>
             </div>
@@ -356,11 +331,11 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
                   className={cn(
                     "relative p-6 rounded-xl border transition-all",
                     isDark ? "bg-[#111113] border-[#1c1c20]" : "bg-white border-[#e2e8f0]",
-                    plan.popular && "border-[#2563eb] border-2"
+                    plan.popular && "border-primary border-2"
                   )}
                 >
                   {plan.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#2563eb] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">
                       Most Popular
                     </div>
                   )}
@@ -371,7 +346,7 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
                       ? plan.id === 'basic' ? "bg-[#1a2035]" : plan.id === 'premium' ? "bg-[#1e1535]" : "bg-[#251c0a]"
                       : plan.id === 'basic' ? "bg-[#dbeafe]" : plan.id === 'premium' ? "bg-[#ede9fe]" : "bg-[#fef3c7]"
                   )}>
-                    <plan.icon className="w-6 h-6 text-[#2563eb]" />
+                    <plan.icon className="w-6 h-6 text-primary" />
                   </div>
 
                   <h3 className="text-lg font-bold mb-2">{plan.name}</h3>
@@ -407,8 +382,8 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
                       "w-full py-3 rounded-lg font-bold text-sm mb-6 transition-all",
                       state === 'current' && "bg-[#1a1a1c] text-[#888888] cursor-not-allowed",
                       state === 'owned' && "bg-[#1a1a1c] text-[#888888] cursor-not-allowed",
-                      state === 'upgrade' && idx === 1 && "bg-[#2563eb] text-white hover:opacity-90",
-                      state === 'upgrade' && idx !== 1 && "border border-[#2563eb] text-[#2563eb] bg-transparent hover:bg-[#2563eb] hover:text-white"
+                      state === 'upgrade' && idx === 1 && "bg-primary text-white hover:opacity-90",
+                      state === 'upgrade' && idx !== 1 && "border border-primary text-primary bg-transparent hover:bg-primary hover:text-white"
                     )}
                   >
                     {state === 'current' && 'Current Plan'}
@@ -432,7 +407,7 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
                             className={cn(
                               "px-2 py-1 rounded-full text-xs border",
                               state === 'owned'
-                                ? "bg-[#2563eb]/10 text-[#2563eb] border-[#2563eb]/20"
+                                ? "bg-primary/10 text-primary border-primary/20"
                                 : isDark ? "bg-[#1a1a1c] text-[#3a3a3e] border-[#1e1e22]" : "bg-[#f1f5f9] text-[#b0bec5] border-[#e8edf3]"
                             )}
                           >
@@ -447,8 +422,8 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
                   <div className="space-y-3">
                     {plan.tools.map((tool, toolIdx) => (
                       <div key={toolIdx} className="flex items-start gap-3">
-                        <div className="w-5 h-5 rounded-full bg-[#2563eb]/10 border border-[#2563eb] flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <Check className="w-3 h-3 text-[#2563eb]" />
+                        <div className="w-5 h-5 rounded-full bg-primary/10 border border-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Check className="w-3 h-3 text-primary" />
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
@@ -459,7 +434,7 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
                               </span>
                             )}
                             {tool.ai && (
-                              <span className="text-xs font-bold bg-[#2563eb] text-white px-1.5 py-0.5 rounded uppercase tracking-widest">
+                              <span className="text-xs font-bold bg-primary text-white px-1.5 py-0.5 rounded uppercase tracking-widest">
                                 AI
                               </span>
                             )}
