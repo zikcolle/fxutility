@@ -104,6 +104,8 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
       name: "Basic",
       monthlyPrice: 0,
       yearlyPrice: 0,
+      paystackPlanIdMonthly: null,
+      paystackPlanIdYearly: null,
       tagline: "Perfect for beginners and casual traders.",
       icon: Shield,
       tools: [
@@ -120,6 +122,8 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
       name: "Premium",
       monthlyPrice: 10000,
       yearlyPrice: 100000,
+      paystackPlanIdMonthly: 'PLN_premium_monthly',
+      paystackPlanIdYearly: 'PLN_premium_yearly',
       tagline: "For serious traders needing more precision.",
       icon: Zap,
       popular: true,
@@ -135,6 +139,8 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
       name: "Pro",
       monthlyPrice: 25000,
       yearlyPrice: 250000,
+      paystackPlanIdMonthly: 'PLN_pro_monthly',
+      paystackPlanIdYearly: 'PLN_pro_yearly',
       tagline: "Unlimited power for high-frequency pros.",
       icon: Crown,
       tools: [
@@ -189,57 +195,75 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
       alert("Please sign in to upgrade.");
       return;
     }
-  
+
+    if (plan.monthlyPrice === 0 && plan.yearlyPrice === 0) {
+      alert("Basic plan is free. You already have access to basic tools.");
+      return;
+    }
+
+    try {
+      await loadPaystackScript();
+    } catch (error) {
+      console.error(error);
+      alert("Paystack could not load. Please refresh and try again.");
+      return;
+    }
+
+    if (!window.PaystackPop) {
+      alert("Paystack could not load. Please refresh and try again.");
+      return;
+    }
+
     const amount = yearly ? plan.yearlyPrice : plan.monthlyPrice;
+    const paystackPlanId = yearly ? plan.paystackPlanIdYearly : plan.paystackPlanIdMonthly;
+    const billingCycle = yearly ? 'yearly' : 'monthly';
 
-const handler = window.PaystackPop.setup({
-  key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
-  email: user.email,
-  amount: amount * 100,
-  currency: "NGN",
-  metadata: {
-    user_id: user.id,
-    plan_tier: plan.name,
-    billing_cycle: yearly ? 'yearly' : 'monthly',
-  },
+    const handler = window.PaystackPop.setup({
+      key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
+      email: user.email,
+      amount: amount * 100,
+      currency: "NGN",
+      plan: paystackPlanId,
+      metadata: {
+        user_id: user.id,
+        plan_tier: plan.name,
+        billing_cycle: billingCycle,
+      },
+      onClose: function () {
+        console.log("Payment window closed");
+      },
+      callback: async function (response) {
+        try {
+          const { error } = await supabase.rpc('record_paystack_subscription', {
+            p_reference: response.reference,
+            p_plan_tier: plan.name,
+            p_amount_kobo: amount * 100,
+            p_billing_cycle: billingCycle,
+            p_authorization_code: response.authorization?.authorization_code || null,
+            p_customer_code: response.customer?.customer_code || null,
+          });
 
-  callback: function (response) {
-    supabase
-      .rpc('record_paystack_payment', {
-        p_reference: response.reference,
-        p_plan_tier: plan.name,
-        p_credits: 0,
-        p_amount_kobo: amount * 100,
-        p_billing_cycle: yearly ? 'yearly' : 'monthly',
-        p_payment_type: 'subscription',
-      })
-      .then(async ({ error }) => {
-        if (error) {
-          console.error('Payment recording failed:', error);
-          alert(
-            "Payment succeeded, but we could not update your account automatically. Please contact support with reference: " +
-              response.reference
-          );
-          return;
+          if (error) {
+            console.error('Subscription recording failed:', error);
+            alert(
+              "Payment succeeded, but we could not activate your subscription. Please contact support with reference: " +
+                response.reference
+            );
+            return;
+          }
+
+          await refreshProfile();
+          setTier(plan.name);
+          alert(`${plan.name} subscription activated. You will be auto-billed on ${billingCycle === 'monthly' ? 'the same day each month' : 'the same day each year'}.`);
+        } catch (e) {
+          console.error('Error processing subscription:', e);
+          alert("Something went wrong after payment. Please contact support.");
         }
+      },
+    });
 
-        await refreshProfile();
-        setTier(plan.name);
-        alert(`${plan.name} activated.`);
-      })
-      .catch((e) => {
-        console.error(e);
-        alert("Something went wrong after payment. Please contact support.");
-      });
-  },
-
-  onClose: function () {
-    console.log("Window closed");
-  },
-});
-
-handler.openIframe();
-};
+    handler.openIframe();
+  };
   function handleTopUpCredits() {
       navigate('/dashboard?topup=true');
     }
