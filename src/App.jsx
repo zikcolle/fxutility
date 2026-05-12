@@ -9,6 +9,7 @@ import ScrollToTop from './components/shared/ScrollToTop';
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import PricingPage from './pages/PricingPage';
+import PropTracker from './pages/PropTracker';
 import AuthPage from './pages/AuthPage';
 import { PrivacyPolicy, TermsOfService, RiskDisclosure, CookiePolicy } from './pages/legal/LegalPages';
 
@@ -32,6 +33,7 @@ function App() {
                   } 
                 />
                 <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/prop-tracker" element={<PropTracker />} />
                 <Route path="/login" element={<AuthPage type="login" />} />
                 <Route path="/signup" element={<AuthPage type="signup" />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />

@@ -146,6 +146,15 @@
   so existing JSX with bg-white / bg-gray-50 / text-gray-* 
   auto-adapts in dark mode without touching JSX files.
 */
+
+@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.animate-marquee {
+  animation: marquee 20s linear infinite;
+}
 .dark .bg-white               { background-color: var(--color-surface) !important; }
 .dark .bg-gray-50             { background-color: var(--color-surface-2) !important; }
 .dark .bg-gray-50\/50         { background-color: color-mix(in srgb, var(--color-surface-2) 50%, transparent) !important; }

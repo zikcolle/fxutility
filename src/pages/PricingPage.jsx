@@ -18,6 +18,20 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    document.title = 'FXUtility Pricing — Free and Pro Forex Tools';
+    // SEO Meta Tags
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'FXUtility pricing plans: Free tools, Pro features, and Team accounts. Start with free forex calculators and upgrade for advanced AI signals and prop firm tracking.');
+    } else {
+      const meta = document.createElement('meta');
+      meta.name = 'description';
+      meta.content = 'FXUtility pricing plans: Free tools, Pro features, and Team accounts. Start with free forex calculators and upgrade for advanced AI signals and prop firm tracking.';
+      document.head.appendChild(meta);
+    }
+  }, []);
+
   // Currency detection
   useEffect(() => {
     const detectCurrency = async () => {
@@ -101,55 +115,57 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
   const plans = [
     {
       id: 'basic',
-      name: "Basic",
+      name: 'Basic',
       monthlyPrice: 0,
       yearlyPrice: 0,
-      tagline: "Perfect for beginners and casual traders.",
+      tagline: 'Free access to the core calculators every trader needs.',
       icon: Shield,
       tools: [
-        { name: "Lot Size Calculator", desc: "Protect 1–2% risk per trade", free: false },
-        { name: "Pip Value Intelligence", desc: "Exact pip value across all pairs", free: false },
-        { name: "Margin Requirement", desc: "Broker margin for any position", free: false },
-        { name: "Profit/Loss Architect", desc: "P&L projection before entry", free: false },
-        { name: "Currency Strength Meter", desc: "Real-time 8-pair ranking", free: true },
-        { name: "Session Overlap", desc: "Live market session clock", free: true }
+        { name: 'Lot Size Calculator', desc: 'My risk, my position size, no guesswork.', free: true },
+        { name: 'Pip Value Calculator', desc: 'Exact pip value in account currency for every pair.', free: true },
+        { name: 'Margin Requirement', desc: 'Know your required margin before you place the order.', free: true },
+        { name: 'Profit/Loss Estimator', desc: 'Plan your trade outcome before you execute.', free: true },
+        { name: 'Currency Strength Meter', desc: 'See which majors are trending strongest.', free: true }
       ]
     },
     {
-      id: 'premium',
-      name: "Premium",
+      id: 'pro',
+      name: 'Pro',
       monthlyPrice: 10000,
       yearlyPrice: 100000,
-      tagline: "For serious traders needing more precision.",
+      tagline: 'A complete desk for serious retail traders.',
       icon: Zap,
       popular: true,
       tools: [
-        { name: "Prop Firm Guard", desc: "Real-time drawdown tracker", ai: false },
-        { name: "Correlation Matrix", desc: "28-pair correlation heatmap", ai: false },
-        { name: "AI Signal Engine", desc: "Neural network trade setups", ai: true }
+        { name: 'Prop Firm Guard', desc: 'Track drawdown against FTMO, The5ers, Topstep, and more.', ai: false },
+        { name: 'Correlation Matrix', desc: 'Avoid trade duplication with live pair correlation.', ai: false },
+        { name: 'AI Signal Engine', desc: 'Next-level setup ideas with pattern recognition.', ai: true },
+        { name: 'Session Overlap', desc: 'Plan entries when liquidity and volatility line up.', ai: false }
       ],
       inherited: ['basic']
     },
     {
-      id: 'pro',
-      name: "Pro",
+      id: 'team',
+      name: 'Team',
       monthlyPrice: 25000,
       yearlyPrice: 250000,
-      tagline: "Unlimited power for high-frequency pros.",
+      tagline: 'Shared access and advanced desk tools for funded teams.',
       icon: Crown,
       tools: [
-        { name: "Edge Scanner Pro", desc: "High-probability edge detection", ai: true },
-        { name: "Alert Manager", desc: "Custom trade alert system", ai: false },
-        { name: "Educational Lab", desc: "Institutional trading education", ai: false }
+        { name: 'Edge Scanner Pro', desc: 'Find institutional-quality trade edges faster.', ai: true },
+        { name: 'Alert Manager', desc: 'Team-wide alerts and shared trade signals.', ai: false },
+        { name: 'API Access', desc: 'Feed live rate data into your own tools.', ai: false },
+        { name: 'Dedicated Support', desc: 'Priority help when your desk is live.', ai: false }
       ],
-      inherited: ['basic', 'premium']
+      inherited: ['basic', 'pro']
     }
   ];
 
 
+  const effectivePlan = currentTier || currentPlan;
   const getPlanState = (planId) => {
-    const planIndex = { basic: 0, premium: 1, pro: 2 }[planId];
-    const currentIndex = { basic: 0, premium: 1, pro: 2 }[currentPlan];
+    const planIndex = { basic: 0, pro: 1, team: 2 }[planId];
+    const currentIndex = { basic: 0, pro: 1, team: 2 }[effectivePlan] ?? 0;
 
     if (planIndex === currentIndex) return 'current';
     if (planIndex < currentIndex) return 'owned';
@@ -173,14 +189,14 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
     const state = getPlanState(plan.id);
     if (state === 'current') return null;
 
-    if (currentPlan === 'basic' && plan.id === 'premium') {
-      return "INCLUDES BASIC TOOLS, PLUS:";
+    if (effectivePlan === 'basic' && plan.id === 'pro') {
+      return 'INCLUDES BASIC TOOLS, PLUS:';
     }
-    if (currentPlan === 'premium' && plan.id === 'pro') {
-      return "YOUR CURRENT TOOLS, PLUS:";
+    if (effectivePlan === 'pro' && plan.id === 'team') {
+      return 'YOUR CURRENT TOOLS, PLUS:';
     }
-    if (currentPlan === 'basic' && plan.id === 'pro') {
-      return "INCLUDES ALL LOWER PLAN TOOLS, PLUS:";
+    if (effectivePlan === 'basic' && plan.id === 'team') {
+      return 'INCLUDES ALL LOWER PLAN TOOLS, PLUS:';
     }
     return null;
   };
@@ -465,7 +481,7 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
                     "text-xs",
                     isDark ? "text-[#888888]" : "text-[#64748b]"
                   )}>
-                    Your plan unlocks tool access. AI Signal Engine (Premium+) and Edge Scanner Pro (Pro) consume credits per use — top up any time. No wasted monthly allocations.
+                    Your plan unlocks tool access. AI Signal Engine (Pro+) and Edge Scanner Pro (Team) consume credits per use — top up any time. No wasted monthly allocations.
                   </div>
                 </div>
               </div>
@@ -475,6 +491,31 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
               >
                 Top up credits →
               </button>
+            </div>
+          </div>
+
+          <div className={cn(
+            "mt-10 p-8 rounded-3xl border",
+            isDark ? "bg-[#111113] border-[#1c1c20]" : "bg-white border-[#e2e8f0]"
+          )}>
+            <h2 className="text-xl font-bold text-text-primary mb-4">Frequently asked questions</h2>
+            <div className="grid gap-4">
+              {[
+                { question: 'Is the free plan really free?', answer: 'Yes. Basic access gives you all essential calculators without a credit card or trial period.' },
+                { question: 'Can I switch from Pro to Team later?', answer: 'Absolutely. Upgrade anytime and keep your data across plans.' },
+                { question: 'What payment methods do you accept?', answer: 'Paystack is our secure checkout provider. Local card and bank payments are supported where available.' }
+              ].map((item, idx) => (
+                <div key={idx} className={cn(
+                  "p-4 rounded-2xl border",
+                  isDark ? "border-[#1e1e22] bg-[#0f1319]" : "border-[#e8edf3] bg-[#f8fafc]"
+                )}>
+                  <h3 className="font-bold text-sm mb-2">{item.question}</h3>
+                  <p className={cn(
+                    "text-sm",
+                    isDark ? "text-[#d1d5db]" : "text-[#475569]"
+                  )}>{item.answer}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>

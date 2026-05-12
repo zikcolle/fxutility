@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, Filter, TrendingUp, TrendingDown, Clock, MoreHorizontal, Trash2, CheckCircle2, Edit2 } from 'lucide-react';
 import { supabase, useAuth } from '../../context/AuthContext';
+import { useLiveRates } from '../../hooks/useLiveRates';
 import { cn } from '../../lib/utils';
 
 const TradingLog = () => {
   const { user } = useAuth();
+  const { getRate, loading: ratesLoading } = useLiveRates();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,6 +42,18 @@ const TradingLog = () => {
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
+
+  // Autofill entry price when pair changes
+  useEffect(() => {
+    if (formData.pair && formData.pair.length === 6 && !ratesLoading) {
+      const from = formData.pair.slice(0, 3);
+      const to = formData.pair.slice(3, 6);
+      const rate = getRate(from, to);
+      if (rate && !formData.entry_price) {
+        setFormData(prev => ({ ...prev, entry_price: rate.toFixed(to === 'JPY' ? 3 : 5) }));
+      }
+    }
+  }, [formData.pair, getRate, ratesLoading, formData.entry_price]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -141,28 +155,28 @@ const TradingLog = () => {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="px-6 py-4 text-[10px] font-bold text-text-secondary uppercase tracking-widest">Asset</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-text-secondary uppercase tracking-widest">Type</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-text-secondary uppercase tracking-widest">Entry</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-text-secondary uppercase tracking-widest">Size</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-text-secondary uppercase tracking-widest">Status / P&L</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-text-secondary uppercase tracking-widest text-right">Actions</th>
+                <th className="px-3 md:px-6 py-4 text-[10px] font-bold text-text-secondary uppercase tracking-widest">Asset</th>
+                <th className="px-3 md:px-6 py-4 text-[10px] font-bold text-text-secondary uppercase tracking-widest">Type</th>
+                <th className="px-3 md:px-6 py-4 text-[10px] font-bold text-text-secondary uppercase tracking-widest">Entry</th>
+                <th className="px-3 md:px-6 py-4 text-[10px] font-bold text-text-secondary uppercase tracking-widest">Size</th>
+                <th className="px-3 md:px-6 py-4 text-[10px] font-bold text-text-secondary uppercase tracking-widest">Status / P&L</th>
+                <th className="px-3 md:px-6 py-4 text-[10px] font-bold text-text-secondary uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-20 text-center text-text-secondary text-sm">Synchronizing ledger...</td>
+                  <td colSpan="6" className="px-3 md:px-6 py-20 text-center text-text-secondary text-sm">Synchronizing ledger...</td>
                 </tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-20 text-center text-text-secondary text-sm italic">No trades logged yet. Start your institutional record.</td>
+                  <td colSpan="6" className="px-3 md:px-6 py-20 text-center text-text-secondary text-sm italic">No trades logged yet. Start your institutional record.</td>
                 </tr>
               ) : (
                 logs.map((log) => (
                   <tr key={log.id} className="hover:bg-gray-50 transition-colors group">
-                    <td className="px-6 py-4 font-bold text-text-primary text-sm">{log.pair}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 md:px-6 py-4 font-bold text-text-primary text-sm">{log.pair}</td>
+                    <td className="px-3 md:px-6 py-4">
                       <span className={cn(
                         "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
                         log.type === 'Buy' ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
@@ -170,9 +184,9 @@ const TradingLog = () => {
                         {log.type}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-text-secondary">{log.entry_price}</td>
-                    <td className="px-6 py-4 text-sm text-text-secondary font-mono">{log.lot_size}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 md:px-6 py-4 text-sm text-text-secondary">{log.entry_price}</td>
+                    <td className="px-3 md:px-6 py-4 text-sm text-text-secondary font-mono">{log.lot_size}</td>
+                    <td className="px-3 md:px-6 py-4">
                       {log.status === 'Open' ? (
                         <span className="flex items-center gap-1.5 text-xs font-bold text-primary">
                           <Clock className="w-3 h-3" /> Open
@@ -183,7 +197,7 @@ const TradingLog = () => {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-3 md:px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => openEditModal(log)} className="p-2 text-gray-400 hover:text-primary transition-colors" title="Edit Trade">
                           <Edit2 className="w-4 h-4" />
@@ -234,14 +248,22 @@ const TradingLog = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-text-secondary uppercase mb-1.5">Entry Price</label>
-                  <input 
-                    type="number" 
-                    step="any"
-                    required
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm font-mono"
-                    value={formData.entry_price}
-                    onChange={(e) => setFormData({...formData, entry_price: e.target.value})}
-                  />
+                  <div className="relative">
+                    <input 
+                      type="number" 
+                      step="any"
+                      required
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm font-mono"
+                      value={formData.entry_price}
+                      onChange={(e) => setFormData({...formData, entry_price: e.target.value})}
+                    />
+                    {formData.pair && formData.pair.length === 6 && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2 py-0.5 bg-primary/10 rounded-full">
+                        <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+                        <span className="text-[8px] font-bold text-primary uppercase tracking-widest">Live</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-text-secondary uppercase mb-1.5">Lot Size</label>

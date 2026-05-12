@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, User, LogOut, Menu, X, Coins, Moon, Sun, Settings, BarChart2, Zap, BookOpen } from 'lucide-react';
+import { useLiveRates } from '../hooks/useLiveRates';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCredit } from '../context/CreditContext';
@@ -26,17 +27,20 @@ const Navbar = () => {
     setIsMobileMenuOpen(false);
   }, [location]);
 
+  const { getRate, loading: tickerLoading, error: tickerError } = useLiveRates();
+
   const navLinks = [
     { name: 'Home', path: '/', type: 'link' },
     { name: 'Features', path: '#features', type: 'anchor' },
     { name: 'Pricing', path: '/pricing', type: 'link' },
+    { name: 'Prop Tracker', path: '/prop-tracker', type: 'link' },
     { name: 'About', path: '#about', type: 'anchor' },
     { name: 'Contact', path: '#contact', type: 'anchor' },
   ];
 
   return (
     <nav className={cn(
-      "fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b",
+      "sticky top-0 left-0 right-0 z-50 transition-all duration-300 border-b",
       isScrolled || isMobileMenuOpen ? "bg-white/80 backdrop-blur-md py-3 border-gray-100" : "bg-transparent py-5 border-transparent"
     )}>
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
@@ -116,6 +120,30 @@ const Navbar = () => {
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
+        </div>
+      </div>
+
+      <div className="overflow-hidden bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-2">
+            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-white/80 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-800 text-xs font-semibold text-text-secondary shadow-sm">
+              <Zap className="w-4 h-4 text-primary" /> Live forex rates
+            </div>
+            <div className="flex-1 overflow-hidden rounded-full bg-white/90 dark:bg-gray-950/80 border border-gray-200 dark:border-gray-800">
+              <div className="animate-marquee whitespace-nowrap py-2 text-sm font-semibold text-text-secondary min-w-full">
+                {[...['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CHF', 'USD/CAD'], ...['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CHF', 'USD/CAD']].map((pair, idx) => {
+                  const [from, to] = pair.split('/');
+                  const rate = getRate(from, to);
+                  return (
+                    <span key={idx} className="inline-flex items-center gap-2 mr-8">
+                      <span className="font-bold text-text-primary">{pair}</span>
+                      <span className="font-mono text-primary">{rate ? rate.toFixed(to === 'JPY' ? 3 : 5) : '—'}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

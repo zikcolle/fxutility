@@ -60,11 +60,11 @@ const PipValueCalculator = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 p-4 md:p-0">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-2xl font-bold text-text-primary mb-1 flex items-center gap-2">
-            <TrendingUp className="w-6 h-6 text-primary" /> Pip Value Intelligence
+            <TrendingUp className="w-6 h-6 text-primary" /> How much is each pip worth?
           </h2>
           <p className="text-sm text-text-secondary">Quantify the monetary impact of every tick move.</p>
         </div>

@@ -138,12 +138,12 @@ export default function CurrencyStrengthMeter() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 p-4 md:p-0">
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-bold text-text-primary mb-1 flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-emerald-500" /> Currency Strength Meter
+            <BarChart3 className="w-6 h-6 text-emerald-500" /> Which currencies are strong?
           </h2>
           <p className="text-sm text-text-secondary">
             8 major currencies · live data

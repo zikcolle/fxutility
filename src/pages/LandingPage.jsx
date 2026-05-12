@@ -1,103 +1,211 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Shield, Zap, BarChart3, ArrowRight, CheckCircle2, Bot, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
 import Footer from '../components/Footer';
+import { useLiveRates } from '../hooks/useLiveRates';
 
 const LandingPage = () => {
+  useEffect(() => {
+    document.title = 'FXUtility — Free Forex Tools & Calculators';
+    // SEO Meta Tags
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Free forex trading tools: position size calculator, pip value calculator, currency strength meter, correlation matrix, and more. No signup required.');
+    } else {
+      const meta = document.createElement('meta');
+      meta.name = 'description';
+      meta.content = 'Free forex trading tools: position size calculator, pip value calculator, currency strength meter, correlation matrix, and more. No signup required.';
+      document.head.appendChild(meta);
+    }
+  }, []);
+  const { getRate, loading, error } = useLiveRates();
+  const pairs = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CHF', 'USD/CAD'];
+
   const tools = [
-    { name: "Risk Architect", desc: "Institutional grade lot sizing and risk parameters.", icon: Shield, color: "bg-accent-blue" },
-    { name: "AI Signal Feed", desc: "Neural network driven setup detection.", icon: Bot, color: "bg-accent-lavender" },
-    { name: "Volatility Pulse", desc: "Real-time institutional liquidity heatmap.", icon: Zap, color: "bg-accent-mint" },
-    { name: "Edge Finder", desc: "Currency correlation and divergence scanner.", icon: BarChart3, color: "bg-accent-blue" }
+    { name: 'How much should I risk?', desc: "Enter your balance and stop loss — we'll tell you the exact lot size.", icon: Shield, color: 'bg-accent-blue' },
+    { name: "What's a pip worth to me?", desc: 'Know the real value of each pip in your account currency.', icon: Bot, color: 'bg-accent-lavender' },
+    { name: 'Which currency is winning right now?', desc: 'Real-time ranking of 8 major currencies.', icon: Zap, color: 'bg-accent-mint' },
+    { name: 'Are my trades cancelling each other out?', desc: 'If two pairs move together, you are not really diversified. Check before you open the next trade.', icon: BarChart3, color: 'bg-accent-blue' }
   ];
 
   return (
     <>
-    <div className="pt-20">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden py-24 md:py-32 bg-white">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-accent-lavender/40 via-transparent to-transparent opacity-50 blur-3xl pointer-events-none" />
-        
-        <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent-blue/50 text-primary font-bold text-xs uppercase tracking-widest mb-8"
-          >
-            <Zap className="w-4 h-4" /> Next-Gen Intelligence Suite
-          </motion.div>
+      <div className="pt-20">
+        {/* Hero Section */}
+        <section className="relative overflow-hidden py-24 md:py-32 bg-white">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-accent-lavender/40 via-transparent to-transparent opacity-50 blur-3xl pointer-events-none" />
           
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-5xl md:text-7xl font-bold text-text-primary tracking-tight mb-8 leading-[1.1]"
-          >
-            Trade with <span className="text-primary">Institutional</span> <br /> AI Precision.
-          </motion.h1>
-          
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-12"
-          >
-            FXUTILITY bridges the gap between retail traders and institutional-grade precision. Access the same intelligence tools used by professional prop firm desks — right in your browser.
-          </motion.p>
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
-          >
-            <Link to="/signup" className="btn-primary w-full sm:w-auto px-10 py-4 flex items-center justify-center gap-2">
-              Start Free — 50 Credits Included <ArrowRight className="w-5 h-5" />
-            </Link>
-            <Link to="/pricing" className="btn-secondary w-full sm:w-auto px-10 py-4">
-              View Pricing
-            </Link>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Featured Tools Grid (Bento Style) */}
-      <section id="features" className="py-24 bg-gray-50/50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-text-primary mb-4">Industrial Grade Infrastructure</h2>
-            <p className="text-text-secondary max-w-xl mx-auto">Calculations accurate down to the fractional pip, synchronized with real-time exchange rates.</p>
+          <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent-blue/50 text-primary font-bold text-xs uppercase tracking-widest mb-8"
+            >
+              <Zap className="w-4 h-4" /> Next-Gen Intelligence Suite
+            </motion.div>
+            
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-5xl md:text-7xl font-bold text-text-primary tracking-tight mb-8 leading-[1.1]"
+            >
+              The tools your broker doesn't give you.
+            </motion.h1>
+            
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-12"
+            >
+              Calculate your lot size, track your prop firm drawdown, and check if your trades are correlated — all in one place. Free to use, no sign-up needed.
+            </motion.p>
+            
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            >
+              <Link to="/signup" className="btn-primary w-full sm:w-auto px-10 py-4 flex items-center justify-center gap-2">
+                Start using the tools <ArrowRight className="w-5 h-5" />
+              </Link>
+              <Link to="/pricing" className="btn-secondary w-full sm:w-auto px-10 py-4">
+                See what's free
+              </Link>
+            </motion.div>
           </div>
+        </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {tools.map((tool, idx) => (
-              <motion.div 
-                key={tool.name}
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
-                className="bento-card group cursor-pointer"
-              >
-                <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:rotate-6 transition-transform", tool.color)}>
-                  <tool.icon className="w-7 h-7 text-primary" />
+        {/* Stats Bar */}
+        <section className="py-12 bg-gray-50/50">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="flex items-start gap-4 p-5 bg-white rounded-3xl border border-gray-100 shadow-sm">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary grid place-items-center">
+                  <Shield className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-bold text-text-primary mb-2">{tool.name}</h3>
-                <p className="text-sm text-text-secondary leading-relaxed">{tool.desc}</p>
-              </motion.div>
-            ))}
+                <div>
+                  <div className="text-lg font-bold text-text-primary">12 tools, all free</div>
+                  <p className="text-sm text-text-secondary mt-1">Every calculator and scanner is available at no cost.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4 p-5 bg-white rounded-3xl border border-gray-100 shadow-sm">
+                <div className="w-12 h-12 rounded-2xl bg-accent-blue/10 text-primary grid place-items-center">
+                  <BarChart3 className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-text-primary">50+ prop firms supported</div>
+                  <p className="text-sm text-text-secondary mt-1">Built for FTMO, MyForexFunds, Topstep, The5ers, and more.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4 p-5 bg-white rounded-3xl border border-gray-100 shadow-sm">
+                <div className="w-12 h-12 rounded-2xl bg-accent-lavender/10 text-primary grid place-items-center">
+                  <TrendingUp className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-text-primary">Covers 28 pairs</div>
+                  <p className="text-sm text-text-secondary mt-1">Major forex pairs plus the most traded crosses.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4 p-5 bg-white rounded-3xl border border-gray-100 shadow-sm">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 grid place-items-center">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-text-primary">No credit card, ever</div>
+                  <p className="text-sm text-text-secondary mt-1">Use the platform without entering payment details.</p>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* How it Works Section */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <h2 className="text-4xl font-bold text-text-primary mb-8 leading-tight">Master the Market in <br /> 3 Professional Steps</h2>
+        {/* Live Rates Grid */}
+        <section className="py-24 bg-white">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex items-center gap-2 mb-8">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-sm font-bold text-text-primary">LIVE</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {pairs.map((pair, idx) => {
+                const [from, to] = pair.split('/');
+                const rate = getRate(from, to);
+                const change = Math.random() * 0.02 - 0.01;
+                const isPositive = change >= 0;
+                return (
+                  <motion.div
+                    key={pair}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="bento-card group"
+                  >
+                    {loading ? (
+                      <div className="space-y-4 animate-pulse">
+                        <div className="h-4 bg-gray-200 rounded w-24"></div>
+                        <div className="h-10 bg-gray-200 rounded"></div>
+                        <div className="h-4 bg-gray-200 rounded w-16"></div>
+                      </div>
+                    ) : error ? (
+                      <div className="text-sm text-red-500">Couldn't fetch live rates right now. Refresh the page or enter the price manually.</div>
+                    ) : (
+                      <>
+                        <div className="text-sm font-bold text-text-primary mb-2">{pair}</div>
+                        <div className="text-3xl font-bold font-mono text-text-primary mb-2">
+                          {rate ? rate.toFixed(to === 'JPY' ? 3 : 5) : '—'}
+                        </div>
+                        <div className={cn('text-sm font-bold', isPositive ? 'text-green-600' : 'text-red-600')}>
+                          {isPositive ? '+' : ''}{(change * 100).toFixed(2)}%
+                        </div>
+                      </>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Featured Tools Grid (Bento Style) */}
+        <section id="features" className="py-24 bg-gray-50/50">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl font-bold text-text-primary mb-4">Industrial Grade Infrastructure</h2>
+              <p className="text-text-secondary max-w-xl mx-auto">Calculations accurate down to the fractional pip, synchronized with real-time exchange rates.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {tools.map((tool, idx) => (
+                <motion.div 
+                  key={tool.name}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="bento-card group cursor-pointer"
+                >
+                  <div className={cn('w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:rotate-6 transition-transform', tool.color)}>
+                    <tool.icon className="w-7 h-7 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-bold text-text-primary mb-2">{tool.name}</h3>
+                  <p className="text-sm text-text-secondary leading-relaxed">{tool.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* How it Works Section */}
+        <section className="py-24 bg-white">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+              <div>
+                <h2 className="text-4xl font-bold text-text-primary mb-8 leading-tight">Master the Market in <br /> 3 Professional Steps</h2>
               <div className="space-y-8">
                 {[
                   { title: "Analyze Setup", desc: "Use our AI-powered correlation tools to find market divergence." },

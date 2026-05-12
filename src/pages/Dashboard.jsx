@@ -165,22 +165,22 @@ const Dashboard = () => {
   const activeTool = toolId;
 
   const tools = [
-    { name: 'Lot Size Calculator',     id: 'lotsize',   cost: 2,  icon: ShieldCheck,  tier: 'Basic',   color: 'text-blue-500',   bg: 'bg-blue-50',
+    { name: 'How much should I risk?',     id: 'lotsize',   cost: 2,  icon: ShieldCheck,  tier: 'Basic',   color: 'text-blue-500',   bg: 'bg-blue-50',
       desc: 'Calculate your exact lot size to protect 1–2% of your account per trade. Works across all currency pairs.', isAI: false },
-    { name: 'Pip Value Intelligence',  id: 'pipvalue',  cost: 2,  icon: TrendingUp,   tier: 'Basic',   color: 'text-green-500',  bg: 'bg-green-50',
+    { name: 'How much is each pip worth?',  id: 'pipvalue',  cost: 2,  icon: TrendingUp,   tier: 'Basic',   color: 'text-green-500',  bg: 'bg-green-50',
       desc: 'Know the exact dollar value of each pip movement before you place a trade — critical for accurate P&L forecasting.', isAI: false },
-    { name: 'Margin Requirement',      id: 'margin',    cost: 2,  icon: Coins,        tier: 'Basic',   color: 'text-orange-500', bg: 'bg-orange-50',
+    { name: 'How much margin do I need?',      id: 'margin',    cost: 2,  icon: Coins,        tier: 'Basic',   color: 'text-orange-500', bg: 'bg-orange-50',
       desc: 'Calculate precisely how much margin your broker requires for any position size, leverage, and currency pair.', isAI: false },
-    { name: 'Profit/Loss Architect',   id: 'profit',    cost: 2,  icon: DollarSign,   tier: 'Basic',   color: 'text-indigo-500', bg: 'bg-indigo-50',
+    { name: 'Will this trade make money?',   id: 'profit',    cost: 2,  icon: DollarSign,   tier: 'Basic',   color: 'text-indigo-500', bg: 'bg-indigo-50',
       desc: 'Project your exact P&L in account currency before entering a trade. No more mental math under pressure.', isAI: false },
-    { name: 'Currency Strength Meter', id: 'strength',  cost: 0,  icon: TrendingUp,   tier: 'Basic',   color: 'text-emerald-500',bg: 'bg-emerald-50',
+    { name: 'Which currencies are strong?', id: 'strength',  cost: 0,  icon: TrendingUp,   tier: 'Basic',   color: 'text-emerald-500',bg: 'bg-emerald-50',
       desc: 'Rank all 8 major currencies from strongest to weakest in real-time. The most-shared tool in forex communities.', isAI: false },
-    { name: 'Session Overlap',         id: 'sessions',  cost: 0,  icon: Zap,          tier: 'Basic',   color: 'text-cyan-500',   bg: 'bg-cyan-50',
+    { name: 'When is the market open?',         id: 'sessions',  cost: 0,  icon: Zap,          tier: 'Basic',   color: 'text-cyan-500',   bg: 'bg-cyan-50',
       desc: 'Live market session clock showing London, NY, Tokyo & Sydney sessions. Spot high-liquidity overlap windows instantly.', isAI: false },
-    { name: 'Prop Firm Guard',         id: 'propfirm',  cost: 5,  icon: ShieldCheck,  tier: 'Premium', color: 'text-amber-500',  bg: 'bg-amber-50',
+    { name: 'Am I close to blowing my account?',         id: 'propfirm',  cost: 5,  icon: ShieldCheck,  tier: 'Premium', color: 'text-amber-500',  bg: 'bg-amber-50',
       desc: 'Track your daily and trailing drawdown against prop firm rules in real-time. Never blow a funded account by mistake.',
       lockedFeatures: ['Real-time drawdown tracker', 'Trailing equity alerts', 'Max loss guardian'], isAI: false },
-    { name: 'Correlation Matrix',      id: 'correlation',cost: 3, icon: Grid3X3,      tier: 'Basic',   color: 'text-violet-500', bg: 'bg-violet-50',
+    { name: 'Which pairs move together?',      id: 'correlation',cost: 3, icon: Grid3X3,      tier: 'Basic',   color: 'text-violet-500', bg: 'bg-violet-50',
       desc: 'See which currency pairs move together and which cancel each other out — avoid redundant exposure across trades.', isAI: false },
     { name: 'AI Signal Engine',        id: 'signals',   cost: 10, icon: Brain,        tier: 'Premium', color: 'text-purple-500', bg: 'bg-purple-50',
       desc: 'Neural network-powered trade setup detection trained on institutional order flow and liquidity data.',
@@ -303,7 +303,7 @@ const Dashboard = () => {
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Trader';
 
   return (
-    <div className="flex min-h-screen bg-gray-50/50 pt-16 lg:pt-20">
+    <div className="flex min-h-screen bg-gray-50/50 pt-0 lg:pt-20">
 
       {/* ── Desktop Sidebar ──────────────────────────────── */}
       <aside className="w-72 bg-white border-r border-gray-100 hidden lg:flex flex-col fixed left-0 top-20 bottom-0 p-6">
@@ -376,11 +376,11 @@ const Dashboard = () => {
       </aside>
 
       {/* ── Main Content ─────────────────────────────────── */}
-      <main className="flex-1 lg:ml-72 p-4 md:p-8 pb-24 lg:pb-8">
+      <main className="flex-1 lg:ml-72 p-4 md:p-8 pb-24 lg:pb-8 overflow-x-hidden">
         <div className="max-w-5xl mx-auto">
 
           {/* Sticky Header — optimized for mobile */}
-          <header className="sticky top-0 z-30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 bg-gray-50/80 backdrop-blur-xl -mx-4 px-4 sm:mx-0 sm:px-0 mb-8 border-b border-gray-100 sm:border-0 sm:bg-transparent sm:backdrop-blur-none">
+          <header className="sm:sticky sm:top-28 lg:top-0 z-30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 bg-gray-50/80 backdrop-blur-xl -mx-4 px-4 sm:mx-0 sm:px-0 mb-4 sm:mb-8 border-b border-gray-100 sm:border-0 sm:bg-transparent sm:backdrop-blur-none">
             <div className="flex items-center gap-2">
               {activeTool && (
                 <button
@@ -459,7 +459,8 @@ const Dashboard = () => {
                   </div>
                 </section>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 -mx-2 md:mx-0">
+                  <div className="px-2 md:px-0">
                 {filteredTools.length === 0 ? (
                   <div className="col-span-3 py-20 text-center text-text-secondary">
                     <Search className="w-10 h-10 mx-auto mb-4 opacity-20" />
@@ -468,7 +469,7 @@ const Dashboard = () => {
                 ) : filteredTools.map((tool) => {
                   const isLocked = tool.tier !== 'Basic' && tier === 'Basic';
                   return (
-                    <div key={tool.id} className="bento-card flex flex-col group relative overflow-hidden">
+                    <div key={tool.id} className="bento-card flex flex-col group relative overflow-hidden mb-4 md:mb-0">
                       <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center mb-5', tool.bg)}>
                         <tool.icon className={cn('w-5 h-5', tool.color)} />
                       </div>
@@ -528,6 +529,7 @@ const Dashboard = () => {
                   );
                 })}
               </div>
+              </div>
 
               <section className="bento-card p-6 bg-white">
                 <div className="flex items-center justify-between mb-5">
@@ -562,7 +564,11 @@ const Dashboard = () => {
           } />
 
             {/* Trading Log */}
-            <Route path="/log" element={<TradingLog />} />
+            <Route path="/log" element={
+              <div className="space-y-8 animate-in fade-in duration-700">
+                <TradingLog />
+              </div>
+            } />
 
             {/* Alert Manager */}
             <Route path="/alerts" element={
@@ -593,7 +599,11 @@ const Dashboard = () => {
             } />
 
             {/* Affiliate Portal */}
-            <Route path="/affiliate" element={<AffiliatePortal />} />
+            <Route path="/affiliate" element={
+              <div className="space-y-8 animate-in fade-in duration-700">
+                <AffiliatePortal />
+              </div>
+            } />
 
             {/* Education Lab */}
             <Route path="/learn" element={

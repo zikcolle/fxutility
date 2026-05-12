@@ -24,10 +24,10 @@ const EdgeScanner = () => {
   }, []);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in duration-500 p-4 md:p-0">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-text-primary">Institutional Edge Scanner</h2>
+          <h2 className="text-2xl font-bold text-text-primary">Edge Scanner Pro</h2>
           <p className="text-sm text-text-secondary">Neural correlation and divergence detection across 28 pairs.</p>
         </div>
         <button 
