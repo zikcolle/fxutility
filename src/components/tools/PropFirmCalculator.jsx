@@ -118,7 +118,7 @@ const PropFirmCalculator = () => {
           </p>
         </div>
         <div className="px-4 py-2 bg-amber-50 rounded-full text-xs font-bold text-amber-600 uppercase tracking-widest border border-amber-100">
-          5 Credits
+          Premium
         </div>
       </div>
 

@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { TrendingUp, Calculator, RefreshCw, Info, Lock, Shield } from 'lucide-react';
-import { useCredit } from '../../context/CreditContext';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 
 const PipValueCalculator = () => {
   const { user } = useAuth();
-  const { useCredits } = useCredit();
   const [lotSize, setLotSize] = useState('1.0');
   const [pair, setPair] = useState('EURUSD');
   const [result, setResult] = useState(null);
@@ -40,12 +38,6 @@ const PipValueCalculator = () => {
       return;
     }
 
-    const success = await useCredits(2);
-    if (!success) {
-      setLoading(false);
-      return;
-    }
-
     const selectedPair = pairs.find(p => p.name.toUpperCase() === pair.toUpperCase());
     // Fallback to $10/pip standard for custom pairs
     const multiplier = selectedPair ? selectedPair.value : 10;
@@ -69,7 +61,7 @@ const PipValueCalculator = () => {
           <p className="text-sm text-text-secondary">Quantify the monetary impact of every tick move.</p>
         </div>
         <div className="px-4 py-2 bg-accent-blue rounded-full text-xs font-bold text-primary uppercase tracking-widest">
-          Cost: 2 Credits
+          Free
         </div>
       </div>
 

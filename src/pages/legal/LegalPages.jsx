@@ -29,7 +29,7 @@ export const PrivacyPolicy = () => (
       <ul className="list-disc pl-6 space-y-3 text-sm">
         <li><strong>Personal Information:</strong> Names, email addresses, usernames, and encrypted passwords.</li>
         <li><strong>Financial Information:</strong> Payment processing is handled by Paystack. We do not store your full credit card details on our servers.</li>
-        <li><strong>Log Data & Usage Information:</strong> IP addresses, browser type, device information, and timestamps of your tool usage for security, credit validation, and service optimization.</li>
+        <li><strong>Log Data & Usage Information:</strong> IP addresses, browser type, device information, and timestamps of your tool usage for security, account protection, and service optimization.</li>
       </ul>
     </section>
     
@@ -83,8 +83,8 @@ export const TermsOfService = () => (
     </section>
     
     <section className="mb-10">
-      <h2 className="text-xl font-bold mb-4">4. Credit and Subscription Policy</h2>
-      <p className="text-sm leading-relaxed">Credits are a virtual utility used to access specific institutional tools. Credits have no real-world monetary value and cannot be exchanged for cash, refunded, or transferred between accounts. Subscription renewals occur automatically unless cancelled 24 hours before the billing cycle ends.</p>
+      <h2 className="text-xl font-bold mb-4">4. Subscription Policy</h2>
+      <p className="text-sm leading-relaxed">Subscription renewals occur automatically unless cancelled 24 hours before the billing cycle ends. Paid tiers unlock additional premium tools and analytics beyond the free core calculators.</p>
     </section>
   </LegalLayout>
 );
@@ -127,7 +127,7 @@ export const CookiePolicy = () => (
       <div className="space-y-6">
         <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
           <h3 className="font-bold text-text-primary mb-2 text-sm">Essential Cookies</h3>
-          <p className="text-xs text-text-secondary leading-relaxed">These cookies are strictly necessary to provide you with services available through our Website and to use some of its features, such as access to secure areas and credit balance management.</p>
+          <p className="text-xs text-text-secondary leading-relaxed">These cookies are strictly necessary to provide you with services available through our Website and to use some of its features, such as access to secure areas and account settings.</p>
         </div>
         <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
           <h3 className="font-bold text-text-primary mb-2 text-sm">Targeting & Advertising Cookies</h3>

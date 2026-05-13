@@ -2,18 +2,19 @@ import { useState, useEffect } from 'react';
 import { Check, Zap, Shield, Crown, ArrowUpRight, Sun, Moon, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useCredit } from '../context/CreditContext';
+import { useUser } from "../context/UserContext";
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { supabase } from '../context/AuthContext';
 import { cn } from '../lib/utils';
+import toast from 'react-hot-toast';
 import Footer from '../components/Footer';
 
 const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
   const [yearly, setYearly] = useState(false);
   const [cur, setCur] = useState({ code: 'NGN', rate: 1, country: null });
   const [curLoading, setCurLoading] = useState(true);
-  const { tier: currentTier, setTier, refreshProfile } = useCredit();
+  const { tier: currentTier, setTier, refreshProfile } = useUser();
   const { user } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -139,7 +140,6 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
       tools: [
         { name: 'Prop Firm Guard', desc: 'Track drawdown against FTMO, The5ers, Topstep, and more.', ai: false },
         { name: 'Correlation Matrix', desc: 'Avoid trade duplication with live pair correlation.', ai: false },
-        { name: 'AI Signal Engine', desc: 'Next-level setup ideas with pattern recognition.', ai: true },
         { name: 'Session Overlap', desc: 'Plan entries when liquidity and volatility line up.', ai: false }
       ],
       inherited: ['basic']
@@ -152,7 +152,6 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
       tagline: 'Shared access and advanced desk tools for funded teams.',
       icon: Crown,
       tools: [
-        { name: 'Edge Scanner Pro', desc: 'Find institutional-quality trade edges faster.', ai: true },
         { name: 'Alert Manager', desc: 'Team-wide alerts and shared trade signals.', ai: false },
         { name: 'API Access', desc: 'Feed live rate data into your own tools.', ai: false },
         { name: 'Dedicated Support', desc: 'Priority help when your desk is live.', ai: false }
@@ -203,12 +202,12 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
 
   const payWithPaystack = async (plan) => {
     if (!user) {
-      alert("Please sign in to upgrade.");
+      toast.error("Please sign in to upgrade.");
       return;
     }
 
     if (plan.monthlyPrice === 0 && plan.yearlyPrice === 0) {
-      alert("Basic plan is free. You already have access to basic tools.");
+      toast.error("Basic plan is free. You already have access to basic tools.");
       return;
     }
 
@@ -216,17 +215,44 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
       await loadPaystackScript();
     } catch (error) {
       console.error(error);
-      alert("Paystack could not load. Please refresh and try again.");
+      toast.error("Paystack could not load. Please refresh and try again.");
       return;
     }
 
     if (!window.PaystackPop) {
-      alert("Paystack could not load. Please refresh and try again.");
+      toast.error("Paystack could not load. Please refresh and try again.");
       return;
     }
 
     const amount = yearly ? plan.yearlyPrice : plan.monthlyPrice;
     const billingCycle = yearly ? 'yearly' : 'monthly';
+
+    const handlePaymentCallback = async (response) => {
+      try {
+        const { error } = await supabase.rpc('record_paystack_payment', {
+          p_reference: response.reference,
+          p_plan_tier: plan.name,
+          p_amount_kobo: amount * 100,
+          p_billing_cycle: billingCycle,
+        });
+
+        if (error) {
+          console.error('Payment recording failed:', error);
+          toast.error(
+            "Payment succeeded, but we could not update your account. Please contact support with reference: " +
+              response.reference
+          );
+          return;
+        }
+
+        await refreshProfile();
+        setTier(plan.name);
+        toast.success(`${plan.name} activated.`);
+      } catch (e) {
+        console.error('Error processing payment:', e);
+        toast.error("Something went wrong after payment. Please contact support.");
+      }
+    };
 
     const handler = window.PaystackPop.setup({
       key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
@@ -241,43 +267,13 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
       onClose: function () {
         console.log("Payment window closed");
       },
-      callback: function (response) {
-  (async () => {
-    try {
-      const { error } = await supabase.rpc('record_paystack_payment', {
-        p_reference: response.reference,
-        p_plan_tier: plan.name,
-        p_credits: 0,
-        p_amount_kobo: amount * 100,
-        p_billing_cycle: billingCycle,
-        p_payment_type: 'subscription',
-      });
-
-      if (error) {
-        console.error('Payment recording failed:', error);
-        alert(
-          "Payment succeeded, but we could not update your account. Please contact support with reference: " +
-            response.reference
-        );
-        return;
-      }
-
-      await refreshProfile();
-      setTier(plan.name);
-      alert(`${plan.name} activated.`);
-    } catch (e) {
-      console.error('Error processing payment:', e);
-      alert("Something went wrong after payment. Please contact support.");
-    }
-  })();
-},
+      onSuccess: function (response) {
+        handlePaymentCallback(response);
+      },
     });
 
     handler.openIframe();
   };
-  function handleTopUpCredits() {
-      navigate('/dashboard?topup=true');
-    }
 
   return (
     <>
@@ -465,32 +461,23 @@ const PricingPage = ({ currentPlan = 'basic', onUpgrade }) => {
             })}
           </div>
 
-          {/* AI Credits Footer */}
           <div className={cn(
             "mt-12 p-6 rounded-xl border",
             isDark ? "bg-[#111113] border-[#1c1c20]" : "bg-white border-[#e2e8f0]"
           )}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-[#2563eb]/10 rounded-lg flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-[#2563eb]" />
-                </div>
-                <div>
-                  <div className="font-bold text-sm mb-1">AI-powered tools use credits</div>
-                  <div className={cn(
-                    "text-xs",
-                    isDark ? "text-[#888888]" : "text-[#64748b]"
-                  )}>
-                    Your plan unlocks tool access. AI Signal Engine (Pro+) and Edge Scanner Pro (Team) consume credits per use — top up any time. No wasted monthly allocations.
-                  </div>
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-[#2563eb]/10 rounded-2xl flex items-center justify-center">
+                <Zap className="w-5 h-5 text-[#2563eb]" />
+              </div>
+              <div>
+                <div className="font-bold text-sm mb-1">No per-use credits required</div>
+                <div className={cn(
+                  "text-xs",
+                  isDark ? "text-[#888888]" : "text-[#64748b]"
+                )}>
+                  Paid plans unlock advanced tools by tier only. Basic users keep access to all core calculators forever, while Pro and Team unlock premium desk features.
                 </div>
               </div>
-              <button 
-                onClick={handleTopUpCredits}
-                className="text-[#2563eb] hover:underline text-sm font-bold"
-              >
-                Top up credits →
-              </button>
             </div>
           </div>
 

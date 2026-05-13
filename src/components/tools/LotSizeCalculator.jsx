@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Shield, Info, Calculator, RefreshCw, ChevronDown } from 'lucide-react';
-import { useCredit } from '../../context/CreditContext';
 import { useAuth } from '../../context/AuthContext';
 import AuthWall from '../shared/AuthWall';
 import { Link } from 'react-router-dom';
 import { cn } from '../../lib/utils';
+import { useLiveRates } from '../../hooks/useLiveRates';
 
 // Pip values per standard lot in USD (approximations, normalized to USD account)
 const PAIR_DATA = {
@@ -27,7 +27,7 @@ const PAIRS = Object.keys(PAIR_DATA);
 
 const LotSizeCalculator = () => {
   const { user } = useAuth();
-  const { useCredits } = useCredit();
+  const { getRate } = useLiveRates();
   const [balance, setBalance] = useState('10000');
   const [riskPercent, setRiskPercent] = useState('1');
   const [stopLoss, setStopLoss] = useState('20');
@@ -38,13 +38,18 @@ const LotSizeCalculator = () => {
 
   const calculate = async () => {
     setLoading(true);
-    await new Promise(r => setTimeout(r, 700));
     
     // If user is not logged in, we show them a "demo" result and pop the wall
     if (!user) {
-      const pairInfo = PAIR_DATA[pair.toUpperCase()];
-      const pipValue = pairInfo ? pairInfo.pipValue : 10;
-      const label = pairInfo ? pairInfo.label : pair.toUpperCase();
+      const base = pair.slice(0, 3);
+      const quote = pair.slice(3);
+      const rate = getRate(base, quote);
+      let pipValue;
+      if (quote === 'USD') {
+        pipValue = 10; // USD-quoted pairs
+      } else {
+        pipValue = rate ? (0.0001 / rate) * 100000 : 10;
+      }
       const riskAmt = (parseFloat(balance) * parseFloat(riskPercent)) / 100;
       const lotSize = riskAmt / (parseFloat(stopLoss) * pipValue);
       const minLots = Math.max(0.01, Math.round(lotSize * 100) / 100);
@@ -54,22 +59,22 @@ const LotSizeCalculator = () => {
         riskAmount: riskAmt.toFixed(2),
         positionValue: (minLots * 100000).toFixed(0),
         pipValuePerLot: pipValue.toFixed(2),
-        pair: label
+        pair: pair
       });
       setLoading(false);
       setShowAuthWall(true);
       return;
     }
 
-    const success = await useCredits(2, 'lotsize');
-    if (!success) {
-      setLoading(false);
-      return;
+    const base = pair.slice(0, 3);
+    const quote = pair.slice(3);
+    const rate = getRate(base, quote);
+    let pipValue;
+    if (quote === 'USD') {
+      pipValue = 10; // USD-quoted pairs
+    } else {
+      pipValue = rate ? (0.0001 / rate) * 100000 : 10;
     }
-
-    const pairInfo = PAIR_DATA[pair.toUpperCase()];
-    const pipValue = pairInfo ? pairInfo.pipValue : 10; // default to $10 per standard lot
-    const label = pairInfo ? pairInfo.label : pair.toUpperCase();
     
     const riskAmt = (parseFloat(balance) * parseFloat(riskPercent)) / 100;
     const lotSize = riskAmt / (parseFloat(stopLoss) * pipValue);
@@ -80,7 +85,7 @@ const LotSizeCalculator = () => {
       riskAmount: riskAmt.toFixed(2),
       positionValue: (minLots * 100000).toFixed(0),
       pipValuePerLot: pipValue.toFixed(2),
-      pair: label
+      pair: pair
     });
     setLoading(false);
   };
@@ -95,7 +100,7 @@ const LotSizeCalculator = () => {
           <p className="text-sm text-text-secondary">Professional lot sizing with pair-specific pip value precision.</p>
         </div>
         <div className="px-4 py-2 bg-accent-blue rounded-full text-xs font-bold text-primary uppercase tracking-widest">
-          Cost: 2 Credits
+          Free
         </div>
       </div>
 

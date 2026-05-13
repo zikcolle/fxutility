@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { DollarSign, Calculator, RefreshCw, Info } from 'lucide-react';
-import { useCredit } from '../../context/CreditContext';
 import { useAuth } from '../../context/AuthContext';
 import AuthWall from '../shared/AuthWall';
 import { cn } from '../../lib/utils';
 
 const ProfitCalculator = () => {
   const { user } = useAuth();
-  const { useCredits } = useCredit();
   const [lotSize, setLotSize] = useState('1.0');
   const [pips, setPips] = useState('50');
   const [result, setResult] = useState(null);
@@ -32,12 +30,6 @@ const ProfitCalculator = () => {
       return;
     }
 
-    const success = await useCredits(2);
-    if (!success) {
-      setLoading(false);
-      return;
-    }
-
     const pipValue = 10; // Simple approximation for standard lot
     const profit = parseFloat(lotSize) * parseFloat(pips) * pipValue;
     
@@ -59,7 +51,7 @@ const ProfitCalculator = () => {
           <p className="text-sm text-text-secondary">Project potential gains or losses based on target pips.</p>
         </div>
         <div className="px-4 py-2 bg-accent-blue rounded-full text-xs font-bold text-primary uppercase tracking-widest">
-          Cost: 2 Credits
+          Free
         </div>
       </div>
 

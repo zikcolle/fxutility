@@ -1,8 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import { CreditProvider } from './context/CreditContext';
+import { UserProvider } from './context/UserContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { Toaster } from 'react-hot-toast';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import ScrollToTop from './components/shared/ScrollToTop';
@@ -17,11 +18,12 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <CreditProvider>
+        <UserProvider>
           <Router>
             <div className="min-h-screen bg-white dark:bg-gray-950 transition-colors duration-300">
               <ScrollToTop />
               <Navbar />
+              <Toaster position="top-right" />
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route 
@@ -44,7 +46,7 @@ function App() {
               </Routes>
             </div>
           </Router>
-        </CreditProvider>
+        </UserProvider>
       </AuthProvider>
     </ThemeProvider>
   );

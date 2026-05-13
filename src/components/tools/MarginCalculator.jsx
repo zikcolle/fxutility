@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { Layout, Calculator, RefreshCw, Info } from 'lucide-react';
-import { useCredit } from '../../context/CreditContext';
 import { useAuth } from '../../context/AuthContext';
 import AuthWall from '../shared/AuthWall';
 import { cn } from '../../lib/utils';
 
 const MarginCalculator = () => {
   const { user } = useAuth();
-  const { useCredits } = useCredit();
   const [leverage, setLeverage] = useState('100');
   const [lotSize, setLotSize] = useState('1.0');
   const [pair, setPair] = useState('EURUSD');
@@ -33,12 +31,6 @@ const MarginCalculator = () => {
       return;
     }
 
-    const success = await useCredits(2);
-    if (!success) {
-      setLoading(false);
-      return;
-    }
-
     const contractSize = 100000;
     const marginRequired = (parseFloat(lotSize) * contractSize) / parseFloat(leverage);
     
@@ -60,7 +52,7 @@ const MarginCalculator = () => {
           <p className="text-sm text-text-secondary">Calculate collateral needed for your position size.</p>
         </div>
         <div className="px-4 py-2 bg-accent-blue rounded-full text-xs font-bold text-primary uppercase tracking-widest">
-          Cost: 2 Credits
+          Free
         </div>
       </div>
 

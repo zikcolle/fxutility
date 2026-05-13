@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, Filter, TrendingUp, TrendingDown, Clock, MoreHorizontal, Trash2, CheckCircle2, Edit2 } from 'lucide-react';
 import { supabase, useAuth } from '../../context/AuthContext';
 import { useLiveRates } from '../../hooks/useLiveRates';
+import toast from 'react-hot-toast';
 import { cn } from '../../lib/utils';
 
 const TradingLog = () => {
@@ -80,7 +81,7 @@ const TradingLog = () => {
       closeModal();
       fetchLogs();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 

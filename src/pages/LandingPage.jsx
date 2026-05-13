@@ -43,7 +43,7 @@ const LandingPage = () => {
               animate={{ opacity: 1, y: 0 }}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent-blue/50 text-primary font-bold text-xs uppercase tracking-widest mb-8"
             >
-              <Zap className="w-4 h-4" /> Next-Gen Intelligence Suite
+              <Zap className="w-4 h-4" /> Start free, upgrade for advanced tools
             </motion.div>
             
             <motion.h1 
@@ -89,8 +89,8 @@ const LandingPage = () => {
                   <Shield className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-lg font-bold text-text-primary">12 tools, all free</div>
-                  <p className="text-sm text-text-secondary mt-1">Every calculator and scanner is available at no cost.</p>
+                  <div className="text-lg font-bold text-text-primary">10 core tools</div>
+                  <p className="text-sm text-text-secondary mt-1">Start free with Basic tier. Unlock advanced tools with Pro or Team.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4 p-5 bg-white rounded-3xl border border-gray-100 shadow-sm">
@@ -107,8 +107,8 @@ const LandingPage = () => {
                   <TrendingUp className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-lg font-bold text-text-primary">Covers 28 pairs</div>
-                  <p className="text-sm text-text-secondary mt-1">Major forex pairs plus the most traded crosses.</p>
+                  <div className="text-lg font-bold text-text-primary">Major forex pairs</div>
+                  <p className="text-sm text-text-secondary mt-1">All the pairs traded by millions of forex traders worldwide.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4 p-5 bg-white rounded-3xl border border-gray-100 shadow-sm">
@@ -116,8 +116,8 @@ const LandingPage = () => {
                   <CheckCircle2 className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-lg font-bold text-text-primary">No credit card, ever</div>
-                  <p className="text-sm text-text-secondary mt-1">Use the platform without entering payment details.</p>
+                  <div className="text-lg font-bold text-text-primary">Free tier to start</div>
+                  <p className="text-sm text-text-secondary mt-1">Try the core calculators free. Upgrade anytime for advanced features.</p>
                 </div>
               </div>
             </div>
@@ -135,8 +135,6 @@ const LandingPage = () => {
               {pairs.map((pair, idx) => {
                 const [from, to] = pair.split('/');
                 const rate = getRate(from, to);
-                const change = Math.random() * 0.02 - 0.01;
-                const isPositive = change >= 0;
                 return (
                   <motion.div
                     key={pair}
@@ -159,9 +157,6 @@ const LandingPage = () => {
                         <div className="text-3xl font-bold font-mono text-text-primary mb-2">
                           {rate ? rate.toFixed(to === 'JPY' ? 3 : 5) : '—'}
                         </div>
-                        <div className={cn('text-sm font-bold', isPositive ? 'text-green-600' : 'text-red-600')}>
-                          {isPositive ? '+' : ''}{(change * 100).toFixed(2)}%
-                        </div>
                       </>
                     )}
                   </motion.div>
@@ -172,10 +167,10 @@ const LandingPage = () => {
         </section>
 
         {/* Featured Tools Grid (Bento Style) */}
-        <section id="features" className="py-24 bg-gray-50/50">
+        <section id="features" className="py-24 bg-white">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold text-text-primary mb-4">Industrial Grade Infrastructure</h2>
+              <h2 className="text-3xl font-bold text-text-primary mb-4">The tools</h2>
               <p className="text-text-secondary max-w-xl mx-auto">Calculations accurate down to the fractional pip, synchronized with real-time exchange rates.</p>
             </div>
 
@@ -208,9 +203,9 @@ const LandingPage = () => {
                 <h2 className="text-4xl font-bold text-text-primary mb-8 leading-tight">Master the Market in <br /> 3 Professional Steps</h2>
               <div className="space-y-8">
                 {[
-                  { title: "Analyze Setup", desc: "Use our AI-powered correlation tools to find market divergence." },
-                  { title: "Define Risk", desc: "Calculate your exact lot size using our prop-firm compliant risk architect." },
-                  { title: "Execute Precision", desc: "Monitor institutional liquidity pulsars for the optimal entry window." }
+                  { title: "Analyze Setup", desc: "Check if your open pairs are moving in the same direction before you double your risk." },
+                  { title: "Define Risk", desc: "Calculate your exact lot size and stay within your prop firm's rules." },
+                  { title: "Execute Precision", desc: "Pick your entry when session overlaps give you the most movement." }
                 ].map((step, idx) => (
                   <div key={idx} className="flex gap-4">
                     <div className="flex-shrink-0 w-10 h-10 rounded-full bg-accent-blue flex items-center justify-center">
@@ -228,14 +223,12 @@ const LandingPage = () => {
                <div className="absolute inset-0 bg-primary/5 blur-3xl rounded-full" />
                <div className="relative rounded-bento overflow-hidden shadow-2xl border border-gray-100 h-[500px] w-full bg-white flex flex-col group">
                   {/* Mock UI Toolbar */}
-                  <div className="h-12 bg-gray-50 border-b border-gray-100 flex items-center px-6 justify-between">
+                  <div className="h-12 bg-gray-50 border-b border-gray-100 flex items-center px-6 justify-center">
                     <div className="flex gap-2">
                       <div className="w-3 h-3 rounded-full bg-red-400" />
                       <div className="w-3 h-3 rounded-full bg-yellow-400" />
                       <div className="w-3 h-3 rounded-full bg-green-400" />
                     </div>
-                    <div className="text-[10px] font-bold text-text-secondary tracking-widest uppercase">FXUTILITY TOOLS LAB V1.2</div>
-                    <div className="w-12" />
                   </div>
                   
                   {/* Mock UI Content */}
@@ -265,18 +258,14 @@ const LandingPage = () => {
           <div className="bg-white rounded-3xl p-12 md:p-20 shadow-xl border border-gray-100 overflow-hidden relative">
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-3xl -mr-32 -mt-32" />
             <div className="relative z-10 max-w-2xl">
-              <h2 className="text-3xl md:text-4xl font-bold text-text-primary mb-6">Our Institutional Vision</h2>
+              <h2 className="text-3xl md:text-4xl font-bold text-text-primary mb-6">Why we built this</h2>
               <p className="text-text-secondary text-lg leading-relaxed mb-8">
-                FXUTILITY was born out of a simple realization: retail traders deserve the same precision architecture used by major financial institutions. We've stripped away the complexity to bring you the core utilities needed to manage risk like a professional.
+                Most forex tools are either locked behind expensive platforms or buried in clunky interfaces. We built FXUtility so you can get accurate calculations in seconds, for free.
               </p>
-              <div className="grid grid-cols-2 gap-8 pt-8 border-t border-gray-100">
+              <div className="grid grid-cols-1 gap-8 pt-8 border-t border-gray-100 max-w-xs">
                 <div>
                   <h4 className="text-2xl font-bold text-primary mb-1">99.9%</h4>
                   <p className="text-xs font-bold text-text-secondary uppercase tracking-widest">Uptime Accuracy</p>
-                </div>
-                <div>
-                  <h4 className="text-2xl font-bold text-primary mb-1">15ms</h4>
-                  <p className="text-xs font-bold text-text-secondary uppercase tracking-widest">Data Latency</p>
                 </div>
               </div>
             </div>
@@ -288,19 +277,19 @@ const LandingPage = () => {
       <section id="contact" className="py-24 bg-white">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2 className="text-3xl font-bold text-text-primary mb-6">Connect with the Lab</h2>
-          <p className="text-text-secondary mb-12">Have questions about our AI models or institutional data feeds? Our engineers are here to help.</p>
+          <p className="text-text-secondary mb-12">Got a question or found a bug? We read every message.</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="p-8 rounded-2xl bg-gray-50 border border-gray-100 text-left group hover:border-primary/20 transition-colors">
               <h4 className="font-bold text-text-primary mb-2">Technical Support</h4>
               <p className="text-sm text-text-secondary mb-4">Immediate assistance with platform access.</p>
-              <a href="mailto:support@fxutility.elite" className="text-primary text-sm font-bold flex items-center gap-2 group-hover:gap-3 transition-all">
+              <a href="mailto:support@fxutility.app" className="text-primary text-sm font-bold flex items-center gap-2 group-hover:gap-3 transition-all">
                 Email Support <ArrowRight className="w-4 h-4" />
               </a>
             </div>
             <div className="p-8 rounded-2xl bg-gray-50 border border-gray-100 text-left group hover:border-primary/20 transition-colors">
               <h4 className="font-bold text-text-primary mb-2">Enterprise Inquiries</h4>
               <p className="text-sm text-text-secondary mb-4">Custom liquidity and API solutions.</p>
-              <a href="mailto:labs@fxutility.elite" className="text-primary text-sm font-bold flex items-center gap-2 group-hover:gap-3 transition-all">
+              <a href="mailto:support@fxutility.app" className="text-primary text-sm font-bold flex items-center gap-2 group-hover:gap-3 transition-all">
                 Contact Labs <ArrowRight className="w-4 h-4" />
               </a>
             </div>

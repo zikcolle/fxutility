@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, User, LogOut, Menu, X, Coins, Moon, Sun, Settings, BarChart2, Zap, BookOpen } from 'lucide-react';
+import { TrendingUp, User, LogOut, Menu, X, Moon, Sun, Settings, BarChart2, Zap, BookOpen } from 'lucide-react';
 import { useLiveRates } from '../hooks/useLiveRates';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useCredit } from '../context/CreditContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { cn } from '../lib/utils';
 
 const Navbar = () => {
-  const { credits } = useCredit();
   const { user, signOut } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
@@ -53,33 +51,19 @@ const Navbar = () => {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-8">
-          {location.pathname === '/' ? (
-            navLinks.map((link) => (
-              link.type === 'link' ? (
-                <Link key={link.name} to={link.path} className="text-sm font-semibold text-text-secondary hover:text-primary transition-colors">{link.name}</Link>
-              ) : (
-                <a key={link.name} href={link.path} className="text-sm font-semibold text-text-secondary hover:text-primary transition-colors">{link.name}</a>
-              )
-            ))
-          ) : (
-            <div className="flex items-center gap-2 px-3 py-1 bg-primary/5 rounded-lg border border-primary/10">
-              <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Institutional Hub V1.2</span>
-            </div>
-          )}
+          {navLinks.map((link) => (
+            link.type === 'link' ? (
+              <Link key={link.name} to={link.path} className="text-sm font-semibold text-text-secondary hover:text-primary transition-colors">{link.name}</Link>
+            ) : (
+              <a key={link.name} href={link.path} className="text-sm font-semibold text-text-secondary hover:text-primary transition-colors">{link.name}</a>
+            )
+          ))}
           {user && location.pathname === '/' && (
             <Link to="/dashboard" className="text-sm font-bold text-primary hover:opacity-80 transition-opacity">Tools Hub</Link>
           )}
         </div>
 
         <div className="flex items-center gap-4">
-          {/* User Credits - ONLY show in Dashboard */}
-          {user && location.pathname.startsWith('/dashboard') && (
-            <div className="hidden sm:flex bg-accent-blue dark:bg-blue-900/50 px-4 py-2 rounded-full border border-primary/10 items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-500">
-              <Coins className="w-4 h-4 text-primary" />
-              <span className="text-xs font-bold text-primary">{credits} ⚡</span>
-            </div>
-          )}
-
           {/* Dark Mode Toggle */}
           <button
             onClick={toggleTheme}
@@ -171,17 +155,6 @@ const Navbar = () => {
                   </div>
                   
                   <div className="pt-6 border-t border-gray-100 space-y-4">
-                    <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold text-text-secondary uppercase">Balance</span>
-                        <span className="text-xs font-black text-primary uppercase">Pro Plan</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Coins className="w-5 h-5 text-primary" />
-                        <span className="text-xl font-bold text-text-primary">{credits} Credits</span>
-                      </div>
-                    </div>
-                    
                     <div className="flex items-center gap-3 p-2">
                       <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
                         <User className="w-6 h-6 text-text-secondary" />
@@ -214,7 +187,7 @@ const Navbar = () => {
                             <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
                               <User className="w-5 h-5 text-text-secondary" />
                             </div>
-                            <span className="font-bold text-text-primary">{credits} Credits</span>
+                            <span className="font-bold text-text-primary">Tools Hub Access</span>
                           </div>
                           <button onClick={signOut} className="text-red-500 font-bold flex items-center gap-2">
                             <LogOut className="w-5 h-5" /> Sign Out

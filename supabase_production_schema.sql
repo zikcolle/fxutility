@@ -1,7 +1,7 @@
 -- Idempotent Supabase Production Schema
 -- ⚠️  SECURITY NOTE: Admin seeding is NOT done here.
 --     To grant admin access, run a private migration in the Supabase Dashboard SQL Editor:
---       UPDATE public.profiles SET credits = 999999, tier = 'Pro' WHERE id = '<your-user-uuid>';
+--       UPDATE public.profiles SET tier = 'Pro' WHERE id = '<your-user-uuid>';
 --     Never hardcode admin emails in a public repository.
 
 -- 1. Create a table for public profiles if it doesn't exist
@@ -11,8 +11,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   username TEXT UNIQUE,
   full_name TEXT,
   avatar_url TEXT,
-  credits INTEGER DEFAULT 50,
-  tier TEXT DEFAULT 'Basic' CHECK (tier IN ('Basic', 'Premium', 'Pro', 'Lifetime')),
+  tier TEXT DEFAULT 'Basic' CHECK (tier IN ('Basic', 'Premium', 'Pro', 'Team', 'Lifetime')),
   referral_code TEXT UNIQUE DEFAULT substring(md5(random()::text) from 1 for 8),
   referred_by TEXT REFERENCES public.profiles(username)
 );
@@ -40,16 +39,15 @@ CREATE POLICY "Users can insert their own profile." ON public.profiles
 CREATE POLICY "Users can update own profile." ON public.profiles
   FOR UPDATE USING (auth.uid() = id);
 
--- 3. Trigger to create profile on signup (standard user — 50 credits, Basic tier)
+-- 3. Trigger to create profile on signup (standard user — Basic tier)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-  INSERT INTO public.profiles (id, full_name, avatar_url, credits, tier)
+  INSERT INTO public.profiles (id, full_name, avatar_url, tier)
   VALUES (
     new.id,
     new.raw_user_meta_data->>'full_name',
     new.raw_user_meta_data->>'avatar_url',
-    50,
     'Basic'
   );
   RETURN new;
@@ -66,100 +64,12 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
--- 4. Credit Transactions Table (audit trail for all credit deductions)
-CREATE TABLE IF NOT EXISTS public.credit_transactions (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  tool_id TEXT NOT NULL,
-  amount INTEGER NOT NULL,
-  balance_after INTEGER NOT NULL,
-  payment_provider TEXT,
-  payment_reference TEXT,
-  payment_amount_kobo INTEGER,
-  description TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-ALTER TABLE public.credit_transactions ADD COLUMN IF NOT EXISTS payment_provider TEXT;
-ALTER TABLE public.credit_transactions ADD COLUMN IF NOT EXISTS payment_reference TEXT;
-ALTER TABLE public.credit_transactions ADD COLUMN IF NOT EXISTS payment_amount_kobo INTEGER;
-ALTER TABLE public.credit_transactions ADD COLUMN IF NOT EXISTS description TEXT;
-
-CREATE UNIQUE INDEX IF NOT EXISTS credit_transactions_payment_reference_idx
-  ON public.credit_transactions(payment_reference)
-  WHERE payment_reference IS NOT NULL;
-
-ALTER TABLE public.credit_transactions ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Users can view own transactions." ON public.credit_transactions;
-CREATE POLICY "Users can view own transactions." ON public.credit_transactions
-  FOR SELECT USING (auth.uid() = user_id);
-
--- 5. Tool Usage / Analytics Table
-CREATE TABLE IF NOT EXISTS public.tool_usage (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  tool_id TEXT NOT NULL,
-  credits_spent INTEGER NOT NULL DEFAULT 0,
-  used_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-ALTER TABLE public.tool_usage ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Users can view own tool usage." ON public.tool_usage;
-CREATE POLICY "Users can view own tool usage." ON public.tool_usage
-  FOR SELECT USING (auth.uid() = user_id);
-
--- Allow insert for authenticated users (tools log themselves)
-DROP POLICY IF EXISTS "Users can insert own tool usage." ON public.tool_usage;
-CREATE POLICY "Users can insert own tool usage." ON public.tool_usage
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
--- Clean up legacy functions to resolve linter warnings
-DROP FUNCTION IF EXISTS public.deduct_credits(INTEGER);
-DROP FUNCTION IF EXISTS public.rls_auto_enable() CASCADE;
-
--- 6. Secure Credit Deduction Function (now with transaction logging)
-CREATE OR REPLACE FUNCTION public.deduct_credits(p_amount INTEGER, p_tool_id TEXT DEFAULT 'unknown')
-RETURNS INTEGER AS $$
-DECLARE
-  current_credits INTEGER;
-  new_credits INTEGER;
-BEGIN
-  -- Get current credits with lock
-  SELECT credits INTO current_credits FROM public.profiles WHERE id = auth.uid() FOR UPDATE;
-  
-  IF current_credits IS NULL THEN
-    RAISE EXCEPTION 'Profile not found';
-  END IF;
-
-  IF current_credits < p_amount THEN
-    RAISE EXCEPTION 'Insufficient credits: have %, need %', current_credits, p_amount;
-  END IF;
-
-  new_credits := current_credits - p_amount;
-
-  UPDATE public.profiles
-  SET credits = new_credits, updated_at = NOW()
-  WHERE id = auth.uid();
-
-  -- Log the transaction
-  INSERT INTO public.credit_transactions (user_id, tool_id, amount, balance_after)
-  VALUES (auth.uid(), p_tool_id, p_amount, new_credits);
-
-  -- Log tool usage
-  INSERT INTO public.tool_usage (user_id, tool_id, credits_spent)
-  VALUES (auth.uid(), p_tool_id, p_amount);
-
-  RETURN new_credits;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
-
--- Revoke and explicitly grant for authenticated users only
-REVOKE EXECUTE ON FUNCTION public.deduct_credits(INTEGER, TEXT) FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION public.deduct_credits(INTEGER, TEXT) FROM anon;
-GRANT EXECUTE ON FUNCTION public.deduct_credits(INTEGER, TEXT) TO authenticated;
-
+-- 4. Legacy credit bookkeeping cleanup
+DROP TABLE IF EXISTS public.credit_transactions;
+DROP TABLE IF EXISTS public.tool_usage;
+DROP FUNCTION IF EXISTS public.deduct_credits(INTEGER, TEXT);
+DROP FUNCTION IF EXISTS public.record_paystack_payment(TEXT, TEXT, INTEGER, INTEGER, TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.record_paystack_payment(TEXT, TEXT, INTEGER, INTEGER, TEXT);
 -- 7. Trading Log / Institutional Ledger Table
 CREATE TABLE IF NOT EXISTS public.trading_logs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -207,7 +117,7 @@ ALTER TABLE public.referrals ADD COLUMN IF NOT EXISTS plan_purchased TEXT;
 CREATE TABLE IF NOT EXISTS public.subscriptions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  plan_tier TEXT CHECK (plan_tier IN ('Premium', 'Pro', 'Lifetime')) NOT NULL,
+  plan_tier TEXT CHECK (plan_tier IN ('Premium', 'Pro', 'Team', 'Lifetime')) NOT NULL,
   status TEXT DEFAULT 'Active' CHECK (status IN ('Active', 'Canceled', 'Expired')),
   auto_renew BOOLEAN DEFAULT true,
   current_period_start TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -221,23 +131,18 @@ DROP POLICY IF EXISTS "Users can view own subscriptions." ON public.subscription
 CREATE POLICY "Users can view own subscriptions." ON public.subscriptions
   FOR SELECT USING (auth.uid() = user_id);
 
--- Record a completed Paystack callback and update the user's credits/tier.
+-- Record a completed Paystack callback and update the user's subscription tier.
 -- For stronger production verification, pair this with a server-side Paystack
 -- transaction verification endpoint before calling this function.
 CREATE OR REPLACE FUNCTION public.record_paystack_payment(
   p_reference TEXT,
   p_plan_tier TEXT DEFAULT NULL,
-  p_credits INTEGER DEFAULT 0,
   p_amount_kobo INTEGER DEFAULT 0,
-  p_billing_cycle TEXT DEFAULT NULL,
-  p_payment_type TEXT DEFAULT 'subscription'
+  p_billing_cycle TEXT DEFAULT NULL
 )
 RETURNS JSONB AS $$
 DECLARE
-  current_credits INTEGER;
-  new_credits INTEGER;
   period_end TIMESTAMP WITH TIME ZONE;
-  transaction_id UUID;
 BEGIN
   IF auth.uid() IS NULL THEN
     RAISE EXCEPTION 'Not authenticated';
@@ -247,113 +152,48 @@ BEGIN
     RAISE EXCEPTION 'Payment reference is required';
   END IF;
 
-  IF p_credits <= 0 THEN
-    RAISE EXCEPTION 'Credits must be greater than zero';
-  END IF;
-
-  IF p_payment_type NOT IN ('subscription', 'topup') THEN
-    RAISE EXCEPTION 'Unsupported payment type: %', p_payment_type;
-  END IF;
-
-  IF p_payment_type = 'subscription'
-    AND (p_plan_tier IS NULL OR p_plan_tier NOT IN ('Premium', 'Pro', 'Lifetime')) THEN
+  IF p_plan_tier IS NULL OR p_plan_tier NOT IN ('Premium', 'Pro', 'Team', 'Lifetime') THEN
     RAISE EXCEPTION 'A valid paid plan tier is required';
   END IF;
 
-  SELECT id INTO transaction_id
-  FROM public.credit_transactions
-  WHERE payment_reference = p_reference;
-
-  IF transaction_id IS NOT NULL THEN
-    SELECT credits INTO current_credits
-    FROM public.profiles
-    WHERE id = auth.uid();
-
-    RETURN jsonb_build_object(
-      'status', 'duplicate',
-      'credits', current_credits,
-      'transaction_id', transaction_id
-    );
-  END IF;
-
-  SELECT credits INTO current_credits
-  FROM public.profiles
-  WHERE id = auth.uid()
-  FOR UPDATE;
-
-  IF current_credits IS NULL THEN
-    RAISE EXCEPTION 'Profile not found';
-  END IF;
-
-  new_credits := current_credits + p_credits;
-
   UPDATE public.profiles
   SET
-    credits = new_credits,
-    tier = CASE WHEN p_payment_type = 'subscription' THEN p_plan_tier ELSE tier END,
+    tier = p_plan_tier,
     updated_at = NOW()
   WHERE id = auth.uid();
 
-  INSERT INTO public.credit_transactions (
+  period_end := CASE
+    WHEN p_billing_cycle = 'yearly' THEN NOW() + INTERVAL '1 year'
+    ELSE NOW() + INTERVAL '1 month'
+  END;
+
+  INSERT INTO public.subscriptions (
     user_id,
-    tool_id,
-    amount,
-    balance_after,
-    payment_provider,
-    payment_reference,
-    payment_amount_kobo,
-    description
+    plan_tier,
+    status,
+    auto_renew,
+    current_period_start,
+    current_period_end
   )
   VALUES (
     auth.uid(),
-    CASE WHEN p_payment_type = 'topup' THEN 'topup' ELSE 'subscription' END,
-    p_credits,
-    new_credits,
-    'paystack',
-    p_reference,
-    p_amount_kobo,
-    CASE
-      WHEN p_payment_type = 'topup' THEN 'Credit top-up'
-      ELSE p_plan_tier || ' plan - ' || COALESCE(p_billing_cycle, 'monthly')
-    END
-  )
-  RETURNING id INTO transaction_id;
-
-  IF p_payment_type = 'subscription' THEN
-    period_end := CASE
-      WHEN p_billing_cycle = 'yearly' THEN NOW() + INTERVAL '1 year'
-      ELSE NOW() + INTERVAL '1 month'
-    END;
-
-    INSERT INTO public.subscriptions (
-      user_id,
-      plan_tier,
-      status,
-      auto_renew,
-      current_period_start,
-      current_period_end
-    )
-    VALUES (
-      auth.uid(),
-      p_plan_tier,
-      'Active',
-      true,
-      NOW(),
-      period_end
-    );
-  END IF;
+    p_plan_tier,
+    'Active',
+    true,
+    NOW(),
+    period_end
+  );
 
   RETURN jsonb_build_object(
     'status', 'recorded',
-    'credits', new_credits,
-    'transaction_id', transaction_id
+    'tier', p_plan_tier
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
-REVOKE EXECUTE ON FUNCTION public.record_paystack_payment(TEXT, TEXT, INTEGER, INTEGER, TEXT, TEXT) FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION public.record_paystack_payment(TEXT, TEXT, INTEGER, INTEGER, TEXT, TEXT) FROM anon;
-GRANT EXECUTE ON FUNCTION public.record_paystack_payment(TEXT, TEXT, INTEGER, INTEGER, TEXT, TEXT) TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.record_paystack_payment(TEXT, TEXT, INTEGER, TEXT) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.record_paystack_payment(TEXT, TEXT, INTEGER, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.record_paystack_payment(TEXT, TEXT, INTEGER, TEXT) TO authenticated;
 
 -- 10. Affiliate Payout Requests Table
 CREATE TABLE IF NOT EXISTS public.affiliate_payouts (

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   ShieldCheck, 
-  Coins, 
   Settings, 
   LogOut, 
   BarChart2, 
@@ -15,10 +14,12 @@ import {
   Brain,
   DollarSign,
   Grid3X3,
-  BookOpen
+  BookOpen,
+  Coins
 } from 'lucide-react';
-import { useCredit } from '../context/CreditContext';
+import { useUser } from '../context/UserContext';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 import { supabase } from '../context/AuthContext';
 import { Routes, Route, Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { cn } from '../lib/utils';
@@ -43,7 +44,7 @@ const NAV_ITEMS = [
 ];
 
 const Dashboard = () => {
-  const { credits, tier, refreshProfile } = useCredit();
+  const { tier } = useUser();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -51,50 +52,13 @@ const Dashboard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [search, setSearch] = useState('');
   
-  // Top Up & Billing State
-  const [showTopUpModal, setShowTopUpModal] = useState(false);
-  const [topUpAmount, setTopUpAmount] = useState(500);
-  const [isAutoRenew, setIsAutoRenew] = useState(false);
-
   const [transactions, setTransactions] = useState([]);
-  const creditPriceNgn = 30;
-
-  const loadPaystackScript = () => {
-    const scriptUrl = 'https://js.paystack.co/v1/inline.js';
-    return new Promise((resolve, reject) => {
-      if (window.PaystackPop) {
-        resolve();
-        return;
-      }
-
-      const existingScript = document.querySelector(`script[src="${scriptUrl}"]`);
-      if (existingScript) {
-        existingScript.addEventListener('load', resolve);
-        existingScript.addEventListener('error', () => reject(new Error('Failed to load Paystack script.')));
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = scriptUrl;
-      script.async = true;
-      script.onload = resolve;
-      script.onerror = () => reject(new Error('Failed to load Paystack script.'));
-      document.head.appendChild(script);
-    });
-  };
 
   // Fetch Transactions
   useEffect(() => {
     if (!user) return;
     const fetchTransactions = async () => {
       try {
-        const { data: creditData } = await supabase
-          .from('credit_transactions')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(5);
-
         const { data: payoutData } = await supabase
           .from('affiliate_payouts')
           .select('*')
@@ -102,37 +66,22 @@ const Dashboard = () => {
           .order('created_at', { ascending: false })
           .limit(5);
 
-        let combined = [];
-        if (creditData) {
-          combined = [...combined, ...creditData.map(tx => ({
-            type: tx.tool_id === 'topup' ? 'Credit Top-Up' : tx.tool_id === 'subscription' ? 'Plan Payment' : 'Tool Usage',
-            amount: tx.tool_id === 'topup' || tx.tool_id === 'subscription' ? `+${tx.amount.toLocaleString()} Credits` : `-${tx.amount} Credits`,
-            date: new Date(tx.created_at).toLocaleDateString(),
-            sortDate: tx.created_at,
-            status: 'Completed',
-            color: tx.tool_id === 'topup' || tx.tool_id === 'subscription' ? 'text-green-600' : 'text-text-primary'
-          }))];
-        }
-        if (payoutData) {
-          combined = [...combined, ...payoutData.map(tx => ({
-            type: 'Affiliate Payout',
-            amount: `$${tx.amount.toFixed(2)}`,
-            date: new Date(tx.created_at).toLocaleDateString(),
-            sortDate: tx.created_at,
-            status: tx.status,
-            color: 'text-amber-600'
-          }))];
-        }
-        
-        // Sort combined descending by date
-        combined.sort((a, b) => new Date(b.sortDate) - new Date(a.sortDate));
+        const combined = payoutData?.map(tx => ({
+          type: 'Affiliate Payout',
+          amount: `$${tx.amount.toFixed(2)}`,
+          date: new Date(tx.created_at).toLocaleDateString(),
+          sortDate: tx.created_at,
+          status: tx.status,
+          color: 'text-amber-600'
+        })) || [];
+
         setTransactions(combined.slice(0, 5));
       } catch (err) {
         console.error(err);
       }
     };
     fetchTransactions();
-  }, [user, credits]);
+  }, [user]);
 
   // Live Clock
   useEffect(() => {
@@ -141,15 +90,6 @@ const Dashboard = () => {
   }, []);
 
   // Check for topup URL parameter
-  useEffect(() => {
-    const urlParams = new URLSearchParams(location.search);
-    if (urlParams.get('topup') === 'true') {
-      setShowTopUpModal(true);
-      // Clean up URL
-      navigate(location.pathname, { replace: true });
-    }
-  }, [location.search, navigate]);
-
   // Determine current active tab based on path
   const getActiveTab = () => {
     const path = location.pathname;
@@ -196,25 +136,18 @@ const Dashboard = () => {
   );
 
   const handleUseTool = (tool) => {
-    // Check tier access first
-    if (tool.tier !== 'Basic' && tier === 'Basic') {
-      alert('This tool requires a Premium or Pro subscription.');
-      return;
-    }
-
-    // Determine if user needs to pay credits
-    const needsCredits = () => {
-      // Basic users pay for all tools except free ones (cost = 0)
-      if (tier === 'Basic') {
-        return tool.cost > 0;
-      }
-
-      // Premium/Pro users only pay for AI tools
-      return tool.isAI && tool.cost > 0;
+    const allowedTiers = {
+      Basic: ['Basic'],
+      Premium: ['Basic', 'Premium'],
+      Pro: ['Basic', 'Premium', 'Pro'],
+      Team: ['Basic', 'Premium', 'Pro'],
+      Lifetime: ['Basic', 'Premium', 'Pro']
     };
 
-    if (needsCredits() && credits < tool.cost) {
-      setShowTopUpModal(true);
+
+    const isLocked = !allowedTiers[tier]?.includes(tool.tier);
+    if (isLocked) {
+      toast.error(`This tool requires ${tool.tier} access. Upgrade your plan to continue.`);
       return;
     }
 
@@ -232,72 +165,6 @@ const Dashboard = () => {
       'Settings': '/dashboard/settings'
     };
     navigate(paths[name] || '/dashboard');
-  };
-
-  const payTopUpWithPaystack = async () => {
-    if (!user) {
-      alert('Please sign in to top up credits.');
-      return;
-    }
-    if (!import.meta.env.VITE_PAYSTACK_PUBLIC_KEY) {
-      alert('Paystack public key is missing. Add VITE_PAYSTACK_PUBLIC_KEY to your environment variables.');
-      return;
-    }
-    if (!Number.isInteger(topUpAmount) || topUpAmount < 50) {
-      alert('Minimum top up is 50 credits.');
-      return;
-    }
-
-    try {
-      await loadPaystackScript();
-    } catch (error) {
-      console.error(error);
-      alert('Paystack could not load. Please refresh and try again.');
-      return;
-    }
-
-    if (!window.PaystackPop) {
-      alert('Paystack could not load. Please refresh and try again.');
-      return;
-    }
-
-    const amountKobo = Math.round(topUpAmount * creditPriceNgn * 100);
-    const handler = window.PaystackPop.setup({
-      key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
-      email: user.email,
-      amount: amountKobo,
-      currency: 'NGN',
-      metadata: {
-        user_id: user.id,
-        credits: topUpAmount,
-        payment_type: 'topup',
-        auto_renew: isAutoRenew
-      },
-      callback: async (response) => {
-        const { error } = await supabase.rpc('record_paystack_payment', {
-          p_reference: response.reference,
-          p_plan_tier: null,
-          p_credits: topUpAmount,
-          p_amount_kobo: amountKobo,
-          p_billing_cycle: null,
-          p_payment_type: 'topup'
-        });
-
-        if (error) {
-          console.error('Top-up recording failed:', error);
-          alert('Payment succeeded, but we could not add credits automatically. Please contact support with reference: ' + response.reference);
-          return;
-        }
-
-        await refreshProfile();
-        setShowTopUpModal(false);
-        alert(`${topUpAmount.toLocaleString()} credits added to your account.`);
-      },
-      onClose: () => {
-        console.log('Paystack top-up window closed');
-      }
-    });
-    handler.openIframe();
   };
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Trader';
@@ -333,22 +200,15 @@ const Dashboard = () => {
 
         {/* Sidebar Footer */}
         <div className="space-y-2 pt-4 border-t border-gray-100">
-          {/* Credit balance */}
           <div className="bg-accent-blue/50 rounded-2xl p-4 border border-primary/10 relative overflow-hidden group">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
-                <Coins className="w-4 h-4 text-primary" />
-                <span className="text-xs font-bold text-primary uppercase">Balance</span>
+                <BarChart2 className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold text-primary uppercase">Plan</span>
               </div>
-              <button onClick={() => setShowTopUpModal(true)} className="text-[10px] bg-primary text-white px-2 py-0.5 rounded font-bold uppercase hover:bg-primary/90 transition-colors">
-                Top Up
-              </button>
             </div>
             <div className="text-2xl font-bold text-text-primary">
-              {credits} <span className="text-sm font-medium text-text-secondary">Credits</span>
-            </div>
-            <div className="flex items-center justify-between mt-1">
-              <div className="text-[10px] font-bold text-primary uppercase tracking-widest">{tier} Plan</div>
+              {tier} <span className="text-sm font-medium text-text-secondary">Access</span>
             </div>
           </div>
 
@@ -459,8 +319,7 @@ const Dashboard = () => {
                   </div>
                 </section>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 -mx-2 md:mx-0">
-                  <div className="px-2 md:px-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
                 {filteredTools.length === 0 ? (
                   <div className="col-span-3 py-20 text-center text-text-secondary">
                     <Search className="w-10 h-10 mx-auto mb-4 opacity-20" />
@@ -493,16 +352,9 @@ const Dashboard = () => {
                       <div className="mt-auto flex items-center justify-between">
                         <div className="text-[10px] font-bold text-text-secondary uppercase">
                           {(() => {
-                            // Free tools (cost = 0)
-                            if (tool.cost === 0) return 'Free';
-
-                            // Basic users see all costs
-                            if (tier === 'Basic') return `${tool.cost} Credits`;
-
-                            // Premium/Pro users: AI tools show cost, others are free
-                            if (tool.isAI) return `${tool.cost} Credits`;
-
-                            // Non-AI tools for Premium/Pro users
+                            if (tool.tier === 'Basic') return 'Free';
+                            if (tool.tier === 'Premium') return tier === 'Pro' ? 'Included' : 'Premium';
+                            if (tool.tier === 'Pro') return tier === 'Pro' ? 'Included' : 'Pro Only';
                             return 'Included';
                           })()}
                         </div>
@@ -528,8 +380,7 @@ const Dashboard = () => {
                     </div>
                   );
                 })}
-              </div>
-              </div>
+                </div>
 
               <section className="bento-card p-6 bg-white">
                 <div className="flex items-center justify-between mb-5">
@@ -578,22 +429,9 @@ const Dashboard = () => {
                   <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
                     <Zap className="w-8 h-8 text-primary" />
                   </div>
-                  <h2 className="text-xl font-bold text-text-primary mb-2">Neural Price Alerts</h2>
-                  <p className="text-text-secondary mb-8 max-w-sm mx-auto text-sm">Real-time volatility and price action triggers delivered to your desktop and mobile device via push notifications.</p>
-                  
-                  {tier !== 'Pro' ? (
-                    <div className="flex flex-col items-center gap-4">
-                      <div className="px-4 py-2 bg-amber-50 rounded-full text-amber-700 font-bold text-[10px] uppercase tracking-widest border border-amber-100">
-                        PRO ACCESS REQUIRED
-                      </div>
-                      <Link to="/pricing" className="btn-primary py-3 px-8 text-sm">Upgrade to Pro</Link>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-4">
-                       <p className="text-sm font-bold text-primary">Pro Active. Alert dashboard loading...</p>
-                       {/* Pro content for alerts will go here */}
-                    </div>
-                  )}
+                  <h2 className="text-xl font-bold text-text-primary mb-2">Alert Manager</h2>
+                  <p className="text-text-secondary mb-8 max-w-sm mx-auto text-sm">Coming soon. We'll notify you when it's ready.</p>
+                  <button className="btn-secondary py-3 px-8 text-sm">Notify Me</button>
                 </div>
               </div>
             } />
@@ -608,49 +446,16 @@ const Dashboard = () => {
             {/* Education Lab */}
             <Route path="/learn" element={
               <div className="space-y-8 animate-in fade-in duration-700">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-text-primary">Institutional Syllabus</h2>
-                  {tier !== 'Pro' && (
-                    <div className="px-4 py-1.5 bg-primary/5 rounded-full text-primary font-black text-[10px] uppercase tracking-widest border border-primary/10">
-                      Pro Access Only
+                <div className="bento-card p-16 text-center bg-white relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                  <div className="relative z-10">
+                    <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                      <BookOpen className="w-8 h-8 text-primary" />
                     </div>
-                  )}
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
-                  {tier !== 'Pro' && (
-                    <div className="absolute inset-0 z-10 backdrop-blur-[4px] bg-white/20 flex items-center justify-center rounded-3xl">
-                      <div className="bg-white p-8 rounded-3xl shadow-2xl border border-gray-100 max-w-sm text-center">
-                        <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                          <BookOpen className="w-6 h-6 text-primary" />
-                        </div>
-                        <h4 className="text-lg font-bold text-text-primary mb-2">Master Institutional Order Flow</h4>
-                        <p className="text-xs text-text-secondary mb-6 leading-relaxed">
-                          Access our full database of professional trading courses and private webinars. Reserved for FXUTILITY Pro members.
-                        </p>
-                        <Link to="/pricing" className="btn-primary py-3 px-6 text-sm block">Upgrade to Unlock</Link>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {[
-                    { title: 'Liquidity Concepts 101', desc: 'Understanding bank order blocks and fair value gaps.', time: '15 min', level: 'Institutional', link: '#' },
-                    { title: 'Risk Management Architecture', desc: 'The math behind professional position sizing.', time: '10 min', level: 'Expert', link: '#' },
-                    { title: 'Currency Correlation Matrix', desc: 'How to trade pair divergence like a macro fund.', time: '20 min', level: 'Advanced', link: '#' },
-                    { title: 'Psychology of Scale', desc: 'Managing six-figure funded accounts without emotional bias.', time: '25 min', level: 'Elite', link: '#' },
-                  ].map((course, i) => (
-                    <div key={i} className={cn("bento-card bg-white", tier !== 'Pro' && "opacity-40 grayscale select-none pointer-events-none")}>
-                      <div className="flex items-center justify-between mb-5">
-                        <div className="px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black text-gray-500 uppercase tracking-widest">{course.level}</div>
-                        <span className="text-xs text-text-secondary">{course.time} read</span>
-                      </div>
-                      <h3 className="text-lg font-bold text-text-primary mb-2">{course.title}</h3>
-                      <p className="text-sm text-text-secondary leading-relaxed mb-5">{course.desc}</p>
-                      <button className={cn("text-sm font-bold flex items-center gap-2", tier !== 'Pro' ? "text-gray-400" : "text-primary hover:gap-3 transition-all")}>
-                        {tier !== 'Pro' ? 'Locked' : 'Start Lesson'} <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+                    <h2 className="text-xl font-bold text-text-primary mb-2">Education Lab</h2>
+                    <p className="text-text-secondary mb-8 max-w-sm mx-auto text-sm">Coming soon. We'll notify you when it's ready.</p>
+                    <button className="btn-secondary py-3 px-8 text-sm">Notify Me</button>
+                  </div>
                 </div>
               </div>
             } />
@@ -668,7 +473,7 @@ const Dashboard = () => {
                       <div className="text-xl font-bold text-text-primary truncate">{displayName}</div>
                       <div className="text-sm text-text-secondary truncate">{user?.email}</div>
                       <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-accent-blue/50 text-primary text-[10px] font-black uppercase tracking-widest rounded-md border border-primary/10">
-                        <Coins className="w-3 h-3" /> {credits} Credits
+                        {tier} Access
                       </div>
                     </div>
                   </div>
@@ -685,34 +490,6 @@ const Dashboard = () => {
                       {tier !== 'Pro' && (
                         <Link to="/pricing" className="text-primary font-bold text-sm">Upgrade →</Link>
                       )}
-                    </div>
-                    
-                    {/* Subscription Auto-Renew */}
-                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                      <div>
-                        <div className="font-bold text-sm text-text-primary">Subscription Auto-Renew</div>
-                        <div className="text-xs text-text-secondary">Automatically bill when plan ends after 1 month</div>
-                      </div>
-                      <div 
-                        onClick={() => {
-                          setIsAutoRenew(!isAutoRenew);
-                          if (!isAutoRenew) {
-                            const subject = encodeURIComponent(`Enable Auto-Renew for ${user?.email || displayName}`);
-                            const body = encodeURIComponent('Hello, please enable auto-renew for my subscription and send the invoice to my registered email address.');
-                            window.location.href = `mailto:isaacbrainer4@gmail.com?subject=${subject}&body=${body}`;
-                          }
-                        }}
-                        className={cn("w-11 h-6 rounded-full cursor-pointer relative transition-colors", isAutoRenew ? "bg-primary" : "bg-gray-300")}
-                      >
-                        <div className={cn("absolute top-1 w-4 h-4 bg-white rounded-full transition-all", isAutoRenew ? "right-1" : "left-1")}></div>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                      <div>
-                        <div className="font-bold text-sm text-text-primary">Credit Balance</div>
-                        <div className="text-xs text-text-secondary">{credits} credits remaining</div>
-                      </div>
-                      <span className="text-lg font-black text-primary">⚡ {credits}</span>
                     </div>
                     <div className="flex items-center justify-between py-3 border-b border-gray-100">
                       <div>
@@ -890,76 +667,6 @@ const Dashboard = () => {
         </div>
       </nav>
 
-      {/* ── Top Up Modal ─────────────────────────────────── */}
-      {showTopUpModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl border border-white/20 animate-in fade-in zoom-in duration-200">
-            <h3 className="text-xl font-bold text-text-primary mb-2">Insufficient Credits / Top Up</h3>
-            <p className="text-sm text-text-secondary mb-6">
-              You need more credits to use this tool. Choose an amount below to instantly top up your account. Available for both Free and Premium users.
-            </p>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-3">
-                {[500, 1000, 5000].map(amount => (
-                  <button
-                    key={amount}
-                    onClick={() => setTopUpAmount(amount)}
-                    className={cn(
-                      "py-3 rounded-xl border text-sm font-bold transition-all",
-                      topUpAmount === amount 
-                        ? "bg-primary border-primary text-white shadow-md shadow-primary/20" 
-                        : "bg-white border-gray-200 text-text-primary hover:border-primary/50"
-                    )}
-                  >
-                    {amount}
-                  </button>
-                ))}
-              </div>
-              
-              <div>
-                <label className="block text-[10px] font-bold text-text-secondary uppercase mb-1.5">Custom Amount</label>
-                <input 
-                  type="number" 
-                  min="50"
-                  step="50"
-                  value={topUpAmount}
-                  onChange={(e) => setTopUpAmount(Number(e.target.value))}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm font-mono"
-                />
-              </div>
-
-              <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-bold text-blue-900">Total Price</div>
-                  <div className="text-xs text-blue-700">1 Credit = NGN {creditPriceNgn}</div>
-                </div>
-                <div className="text-xl font-black text-blue-900">NGN {(topUpAmount * creditPriceNgn).toLocaleString()}</div>
-              </div>
-
-              <div className="flex items-center justify-between mt-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={isAutoRenew} onChange={() => setIsAutoRenew(!isAutoRenew)} className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary" />
-                  <span className="text-xs font-bold text-text-secondary">Enable Auto-TopUp when empty</span>
-                </label>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button type="button" onClick={() => setShowTopUpModal(false)} className="flex-1 px-6 py-3 bg-gray-100 text-text-primary rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors">
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={payTopUpWithPaystack}
-                  className="flex-1 px-6 py-3 bg-primary text-white text-center rounded-xl font-bold text-sm hover:opacity-90 transition-opacity block"
-                >
-                  Pay with Paystack
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
